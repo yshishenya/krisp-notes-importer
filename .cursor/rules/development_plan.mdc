@@ -1,0 +1,20 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# План разработки Krisp Notes Importer
+
+Разработка плагина "Krisp Notes Importer" ведется итерационно, с фокусом на быстром получении рабочей базовой функциональности и ее последующем расширении. Подробный план разработки описан в документе `[docs/DevelopmentPlan.MD](mdc:docs/DevelopmentPlan.MD)`.
+
+## Ключевые итерации:
+
+1.  **Итерация 0: Подготовка окружения** - Настройка проекта, репозитория, базового "скелета" плагина. (См. `[docs/DevelopmentPlan.MD#Итерация-0-Подготовка-и-настройка-окружения](mdc:docs/DevelopmentPlan.MD)`)
+2.  **Итерация 1: Базовые настройки** - Реализация `[src/interfaces.ts](mdc:src/interfaces.ts)`, `[src/core/SettingsManager.ts](mdc:src/core/SettingsManager.ts)` и `[src/ui/SettingsTab.ts](mdc:src/ui/SettingsTab.ts)` для управления основными настройками. (См. `[docs/DevelopmentPlan.MD#Итерация-1-Базовые-настройки-и-их-сохранениезагрузка](mdc:docs/DevelopmentPlan.MD)`)
+3.  **Итерация 2: Ручной импорт одного ZIP** - Реализация основной логики: `[src/core/ZipExtractor.ts](mdc:src/core/ZipExtractor.ts)`, `[src/core/NoteParser.ts](mdc:src/core/NoteParser.ts)`, `[src/core/NoteCreator.ts](mdc:src/core/NoteCreator.ts)`, `[src/core/ProcessingService.ts](mdc:src/core/ProcessingService.ts)` и базовая версия `[src/core/NotificationService.ts](mdc:src/core/NotificationService.ts)`. (См. `[docs/DevelopmentPlan.MD#Итерация-2-Ручной-импорт-одного-ZIP-файла-основной-функционал-парсинга-и-создания-заметки](mdc:docs/DevelopmentPlan.MD)`)
+4.  **Итерация 3: Расширение настроек и шаблонизация** - Добавление всех настроек из `[docs/SRS.MD](mdc:docs/SRS.MD)`, улучшение `[src/core/NoteCreator.ts](mdc:src/core/NoteCreator.ts)` и `[src/core/NoteParser.ts](mdc:src/core/NoteParser.ts)`, обработка дубликатов. (См. `[docs/DevelopmentPlan.MD#Итерация-3-Расширение-настроек-и-шаблонизация](mdc:docs/DevelopmentPlan.MD)`)
+5.  **Итерация 4: Автоматическое отслеживание папки** - Реализация `[src/core/FileWatcherService.ts](mdc:src/core/FileWatcherService.ts)`. (См. `[docs/DevelopmentPlan.MD#Итерация-4-Автоматическое-отслеживание-папки](mdc:docs/DevelopmentPlan.MD)`)
+6.  **Итерация 5: Улучшения UI/UX** - Мастер настройки, тестовый импорт, улучшение `[src/core/NotificationService.ts](mdc:src/core/NotificationService.ts)`, логирование. (См. `[docs/DevelopmentPlan.MD#Итерация-5-Улучшения-UIUX-и-дополнительные-функции](mdc:docs/DevelopmentPlan.MD)`)
+7.  **Итерация 6: Тестирование и релиз** - Отладка, документация, подготовка к публикации. (См. `[docs/DevelopmentPlan.MD#Итерация-6-Тестирование-отладка-документация-и-подготовка-к-релизу](mdc:docs/DevelopmentPlan.MD)`)
+
+Инструменты и окружение, используемые в проекте, включают Node.js, TypeScript, Obsidian API, и esbuild для сборки. Базовые файлы конфигурации проекта: `[esbuild.config.mjs](mdc:esbuild.config.mjs)`, `[manifest.json](mdc:manifest.json)`, `[package.json](mdc:package.json)`, `[tsconfig.json](mdc:tsconfig.json)`.

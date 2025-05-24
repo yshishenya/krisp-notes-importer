@@ -1,0 +1,28 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Управление настройками Krisp Notes Importer
+
+Управление настройками плагина осуществляется через два основных компонента:
+
+1.  **`[src/core/SettingsManager.ts](mdc:src/core/SettingsManager.ts)`**: Этот класс отвечает за:
+    *   Хранение текущих настроек плагина.
+    *   Загрузку настроек из хранилища Obsidian (`Plugin.loadData()`).
+    *   Сохранение настроек в хранилище Obsidian (`Plugin.saveData()`).
+    *   Предоставление доступа к настройкам другим компонентам.
+    *   Валидацию настроек.
+    *   Определение структуры настроек `KrispImporterSettings` (детали в `[src/interfaces.ts](mdc:src/interfaces.ts)` и `[docs/Architecture.MD#22-SettingsManager---Менеджер-настроек](mdc:docs/Architecture.MD)`).
+
+2.  **`[src/ui/SettingsTab.ts](mdc:src/ui/SettingsTab.ts)`**: Этот класс (SettingsUI) отвечает за:
+    *   Создание и отображение вкладки настроек плагина в Obsidian.
+    *   Предоставление пользовательских элементов управления для всех настраиваемых параметров (текстовые поля, выпадающие списки, чекбоксы и т.д.).
+    *   Взаимодействие с `SettingsManager` для загрузки и сохранения настроек при изменении их пользователем.
+    *   Реализацию "Мастера первоначальной настройки" и других интерактивных элементов UI, связанных с настройками.
+
+Детальное описание всех доступных настроек и их UI-представления можно найти в:
+*   `[docs/SRS.MD#311-Пользовательский-интерфейс-UI](mdc:docs/SRS.MD)`
+*   `[docs/SettingsUI.MD](mdc:docs/SettingsUI.MD)`
+
+Интерфейс настроек `KrispImporterSettings` описан в `[docs/Architecture.MD#Структура-данных-настроек-пример](mdc:docs/Architecture.MD)` и должен быть реализован в `[src/interfaces.ts](mdc:src/interfaces.ts)`.
