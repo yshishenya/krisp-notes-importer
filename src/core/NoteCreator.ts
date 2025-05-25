@@ -51,8 +51,21 @@ export class NoteCreator {
             : '';
         content = content.replace(/{{relatedLinks}}/g, relatedLinks);
 
-        // Секции Krisp
-        const summaryText = data.summary?.join('\n> \n> ') || '*Краткое содержание недоступно*';
+        // Секции Krisp - правильное форматирование для callout блоков
+        const summaryText = data.summary?.length
+            ? data.summary.map(line => {
+                // Если строка начинается с "- " или "* ", это элемент списка
+                if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+                    return line.trim();
+                }
+                // Если строка пустая, оставляем пустую строку
+                if (line.trim() === '') {
+                    return '';
+                }
+                // Обычный текст
+                return line.trim();
+            }).join('\n>\n> ')
+            : '*Краткое содержание недоступно*';
         content = content.replace(/{{summary}}/g, summaryText);
 
         const actionItemsList = data.actionItems?.map(item => `- [ ] ${item}`).join('\n> \n> ') || '*Нет задач для выполнения*';
