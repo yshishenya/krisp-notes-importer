@@ -14,6 +14,21 @@ export class NoteCreator {
     }
 
     // Заполняет шаблон заметки данными
+    /**
+     * Applies a template to generate a formatted string based on the provided data and settings.
+     *
+     * This function processes a template string, replacing placeholders with corresponding values from the `ParsedKrispData` object.
+     * It handles various data fields such as meeting title, date, time, participants, analytics, statistics, entities, links, summaries,
+     * action items, key points, transcripts, tags, audio paths, and note filenames. It also manages optional parameters like `noteFileName`
+     * and `audioFilePath`. If certain data is missing, it substitutes default values or placeholder messages.
+     *
+     * @param template - The template string containing placeholders to be replaced.
+     * @param data - An object containing the parsed data from Krisp.
+     * @param settings - Configuration settings for the importer.
+     * @param noteFileName - Optional name of the note file.
+     * @param audioFilePath - Optional path to the audio file.
+     * @returns A formatted string with all placeholders replaced by corresponding data values.
+     */
     private applyTemplate(template: string, data: ParsedKrispData, settings: KrispImporterSettings, noteFileName?: string, audioFilePath?: string): string {
         let content = template;
 
