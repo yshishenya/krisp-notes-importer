@@ -3,10 +3,14 @@ import { SettingsManager } from './core/SettingsManager';
 import { KrispSettingsTab } from './ui/SettingsTab';
 import { KrispImporterSettings, DEFAULT_SETTINGS } from './interfaces';
 import { ProcessingService } from './core/ProcessingService';
+import { FileWatcherService } from './core/FileWatcherService';
+import { NotificationService } from './core/NotificationService';
 
 export default class KrispNotesImporterPlugin extends Plugin {
 	settingsManager: SettingsManager;
 	processingService: ProcessingService;
+	notificationService: NotificationService;
+	fileWatcherService: FileWatcherService;
 
 	async onload() {
 		console.log('Loading Krisp Notes Importer plugin...');
@@ -15,6 +19,13 @@ export default class KrispNotesImporterPlugin extends Plugin {
 		await this.settingsManager.loadSettings();
 
 		this.processingService = new ProcessingService(this.app);
+		this.notificationService = new NotificationService();
+		this.fileWatcherService = new FileWatcherService(
+			this.app,
+			this.processingService,
+			this.notificationService,
+			() => this.settingsManager.getAllSettings()
+		);
 
 		this.addSettingTab(new KrispSettingsTab(this.app, this));
 
@@ -33,10 +44,51 @@ export default class KrispNotesImporterPlugin extends Plugin {
 			}
 		});
 
+		// Команды для FileWatcherService
+		this.addCommand({
+			id: 'start-auto-watching',
+			name: 'Krisp Importer: Start auto-watching folder',
+			callback: async () => {
+				const watchedPath = this.settingsManager.getSetting('watchedFolderPath');
+				if (watchedPath && watchedPath.trim() !== '') {
+					await this.fileWatcherService.startWatching(watchedPath);
+				} else {
+					new Notice('Please set the watched folder path in settings first.');
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'stop-auto-watching',
+			name: 'Krisp Importer: Stop auto-watching',
+			callback: async () => {
+				await this.fileWatcherService.stopWatching();
+			}
+		});
+
+		this.addCommand({
+			id: 'scan-existing-files',
+			name: 'Krisp Importer: Scan existing files in folder',
+			callback: async () => {
+				await this.fileWatcherService.scanExistingFiles();
+			}
+		});
+
+		// Автозапуск отслеживания если включено в настройках
+		const autoScanEnabled = this.settingsManager.getSetting('autoScanEnabled');
+		const watchedPath = this.settingsManager.getSetting('watchedFolderPath');
+		if (autoScanEnabled && watchedPath && watchedPath.trim() !== '') {
+			await this.fileWatcherService.startWatching(watchedPath);
+		}
+
 		console.log('Krisp Notes Importer plugin loaded successfully.');
 	}
 
 	onunload() {
+		// Останавливаем отслеживание при выгрузке плагина
+		if (this.fileWatcherService) {
+			this.fileWatcherService.stopWatching();
+		}
 		console.log('Unloading Krisp Notes Importer plugin.');
 	}
 }

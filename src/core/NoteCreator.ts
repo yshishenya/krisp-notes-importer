@@ -55,11 +55,11 @@ export class NoteCreator {
         const summaryText = data.summary?.join('\n> \n> ') || '*Краткое содержание недоступно*';
         content = content.replace(/{{summary}}/g, summaryText);
 
-        const actionItemsList = data.actionItems?.map(item => `> - [ ] ${item}`).join('\n> \n') || '> *Нет задач для выполнения*';
+        const actionItemsList = data.actionItems?.map(item => `- [ ] ${item}`).join('\n> \n> ') || '*Нет задач для выполнения*';
         content = content.replace(/{{actionItemsList}}/g, actionItemsList);
         content = content.replace(/{{actionItems}}/g, actionItemsList); // Совместимость со старыми шаблонами
 
-        const keyPointsList = data.keyPoints?.map(item => `> - ${item}`).join('\n> \n') || '> *Ключевые моменты не выделены*';
+        const keyPointsList = data.keyPoints?.map(item => `- ${item}`).join('\n> \n> ') || '*Ключевые моменты не выделены*';
         content = content.replace(/{{keyPointsList}}/g, keyPointsList);
         content = content.replace(/{{keyPoints}}/g, keyPointsList); // Совместимость со старыми шаблонами
 

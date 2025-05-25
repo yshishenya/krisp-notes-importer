@@ -1,10 +1,10 @@
 {
     "id": "krisp-notes-importer",
     "name": "Krisp Notes Importer",
-    "version": "0.1.0",
+    "version": "3.0.1",
     "minAppVersion": "0.15.0",
-    "description": "Импортирует заметки и аудио из ZIP-архивов Krisp в Obsidian.",
-    "author": "Ваше Имя (или ник)",
-    "authorUrl": "https://ваш-сайт-или-профиль.com",
+    "description": "Импорт заметок встреч Krisp в Obsidian. Полный UI настроек, автоматическое отслеживание папки, структурированные Markdown заметки с расширенной аналитикой, умными тегами и красивым оформлением callouts.",
+    "author": "KrispImporter Team",
+    "authorUrl": "https://github.com/krisp-importer/obsidian-plugin",
     "isDesktopOnly": false
 }

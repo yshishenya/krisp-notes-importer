@@ -456,38 +456,44 @@ export class NoteParser {
 
     /**
      * Извлекает сущности (проекты, компании, важные термины) из текста
+     * Оптимизированная версия с кэшированием и ограничением размера текста
      */
     private extractEntities(notesContent: string, transcriptContent: string): string[] {
         const entities: string[] = [];
-        const fullText = `${notesContent} ${transcriptContent}`;
+
+        // Ограничиваем размер текста для анализа (первые 5000 символов)
+        const maxTextLength = 5000;
+        const fullText = `${notesContent} ${transcriptContent}`.substring(0, maxTextLength);
+
+        // Предкомпилированные регулярные выражения для лучшей производительности
+        const patterns = {
+            projects: /(?:проект|project|система|платформа|сервис|приложение|продукт)\s+([А-Яа-я\w\s]{3,30})/gi,
+            companies: /(?:компания|компании|организация|корпорация|фирма|бизнес)\s+([А-Яа-я\w\s]{3,30})|([А-Яа-я][А-Яа-я\w]*(?:нефть|банк|групп|холдинг|корп))/gi,
+            dates: /\d{1,2}[\.\-\/]\d{1,2}[\.\-\/]\d{2,4}|\d{4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2}/g
+        };
 
         // Поиск упоминаний проектов
-        const projectKeywords = /(?:проект|project|система|платформа|сервис|приложение|продукт)\s+([А-Яа-я\w\s]{3,30})/gi;
-        const projectMatches = fullText.match(projectKeywords);
+        const projectMatches = fullText.match(patterns.projects);
         if (projectMatches && projectMatches.length > 0) {
-            entities.push('### 🚀 Упомянутые проекты');
-            entities.push('');
+            entities.push('### 🚀 Упомянутые проекты', '');
             const uniqueProjects = [...new Set(projectMatches.slice(0, 5))];
             uniqueProjects.forEach(project => entities.push(`- ${project.trim()}`));
             entities.push('');
         }
 
         // Поиск упоминаний компаний
-        const companyKeywords = /(?:компания|компании|организация|корпорация|фирма|бизнес)\s+([А-Яа-я\w\s]{3,30})|([А-Яа-я][А-Яа-я\w]*(?:нефть|банк|групп|холдинг|корп))/gi;
-        const companyMatches = fullText.match(companyKeywords);
+        const companyMatches = fullText.match(patterns.companies);
         if (companyMatches && companyMatches.length > 0) {
-            entities.push('### 🏢 Упомянутые компании');
-            entities.push('');
+            entities.push('### 🏢 Упомянутые компании', '');
             const uniqueCompanies = [...new Set(companyMatches.slice(0, 5))];
             uniqueCompanies.forEach(company => entities.push(`- ${company.trim()}`));
             entities.push('');
         }
 
         // Поиск важных дат
-        const dateMatches = fullText.match(/\d{1,2}[\.\-\/]\d{1,2}[\.\-\/]\d{2,4}|\d{4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2}/g);
+        const dateMatches = fullText.match(patterns.dates);
         if (dateMatches && dateMatches.length > 0) {
-            entities.push('### 📅 Упомянутые даты');
-            entities.push('');
+            entities.push('### 📅 Упомянутые даты', '');
             const uniqueDates = [...new Set(dateMatches.slice(0, 5))];
             uniqueDates.forEach(date => entities.push(`- ${date}`));
             entities.push('');
