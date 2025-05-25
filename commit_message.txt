@@ -1,0 +1,32 @@
+🔧 Fix formatting issues in Action Items and Key Points (v3.0.1)
+
+🐛 Problem Fixed:
+- Removed extra indentation in first Action Item causing double '>' prefix
+- Fixed inconsistent formatting in Key Points lists
+- Corrected callout content display for better readability
+
+🔧 Technical Changes:
+- Updated NoteCreator.ts logic for list generation inside callouts
+- Removed duplicate '> ' prefixes for elements within callout blocks
+- Improved consistency between Action Items and Key Points formatting
+
+📝 Code Changes:
+- src/core/NoteCreator.ts: Fixed actionItemsList and keyPointsList formatting
+- package.json: Version bump to 3.0.1
+- manifest.json: Version bump to 3.0.1
+- CHANGELOG.md: Added v3.0.1 entry with fix details
+
+📋 Before:
+> > - [ ] Denis - получить примеры... (extra indentation)
+
+📋 After:
+> - [ ] Denis - получить примеры... (correct formatting)
+
+✅ Impact:
+- Better readability of created notes
+- Consistent callout content formatting
+- No breaking changes to existing functionality
+- Backward compatibility maintained
+
+📊 Files Changed: 4 core files + documentation updates
+🚀 Status: Ready for production use

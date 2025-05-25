@@ -1,6 +1,7 @@
 import { App } from 'obsidian';
 import { ProcessingService } from './ProcessingService';
 import { NotificationService } from './NotificationService';
+import { StatusBarService } from './StatusBarService';
 import { KrispImporterSettings } from '../interfaces';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -9,6 +10,7 @@ export class FileWatcherService {
     private app: App;
     private processingService: ProcessingService;
     private notificationService: NotificationService;
+    private statusBarService: StatusBarService | null;
     private watcher: fs.FSWatcher | null = null;
     private isWatching: boolean = false;
     private watchedPath: string = '';
@@ -18,12 +20,14 @@ export class FileWatcherService {
         app: App,
         processingService: ProcessingService,
         notificationService: NotificationService,
-        settingsProvider: () => KrispImporterSettings
+        settingsProvider: () => KrispImporterSettings,
+        statusBarService?: StatusBarService
     ) {
         this.app = app;
         this.processingService = processingService;
         this.notificationService = notificationService;
         this.settingsProvider = settingsProvider;
+        this.statusBarService = statusBarService || null;
     }
 
     /**
@@ -63,11 +67,22 @@ export class FileWatcherService {
             });
 
             this.isWatching = true;
+
+            // Обновляем статус в строке состояния
+            if (this.statusBarService) {
+                this.statusBarService.setWatching(folderPath);
+            }
+
             this.notificationService.showSuccess(`Отслеживание папки запущено: ${folderPath}`);
 
             console.log(`[Krisp Importer] FileWatcher started for: ${folderPath}`);
 
         } catch (error) {
+            // Обновляем статус при ошибке
+            if (this.statusBarService) {
+                this.statusBarService.setError(`Ошибка отслеживания: ${error.message}`);
+            }
+
             console.error('[Krisp Importer] Error starting file watcher:', error);
             this.notificationService.showError(`Ошибка запуска отслеживания: ${error.message}`);
         }
@@ -84,6 +99,12 @@ export class FileWatcherService {
 
         if (this.isWatching) {
             this.isWatching = false;
+
+            // Обновляем статус в строке состояния
+            if (this.statusBarService) {
+                this.statusBarService.setIdle('Отслеживание остановлено');
+            }
+
             this.notificationService.showInfo('Отслеживание папки остановлено');
             console.log('[Krisp Importer] FileWatcher stopped');
         }

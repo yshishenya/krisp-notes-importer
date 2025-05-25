@@ -1,6 +1,6 @@
 {
 	"name": "krisp-notes-importer",
-	"version": "3.0.1",
+	"version": "3.2.0",
 	"description": "Импортирует заметки и аудио из ZIP-архивов Krisp в Obsidian.",
 	"main": "main.js",
 	"scripts": {

@@ -4,6 +4,7 @@ import { ZipExtractor } from './ZipExtractor';
 import { NoteParser } from './NoteParser';
 import { NoteCreator } from './NoteCreator';
 import { NotificationService } from './NotificationService';
+import { StatusBarService } from './StatusBarService';
 import * as path from 'path';
 import { promises as fsPromises, Dirent } from 'fs';
 
@@ -13,13 +14,15 @@ export class ProcessingService {
     private noteParser: NoteParser;
     private noteCreator: NoteCreator | null;
     private notificationService: NotificationService;
+    private statusBarService: StatusBarService | null;
 
-    constructor(app: App) {
+    constructor(app: App, statusBarService?: StatusBarService) {
         this.app = app;
         this.zipExtractor = new ZipExtractor(this.app);
         this.noteParser = new NoteParser();
         this.noteCreator = null; // Будет создан с актуальными settings
         this.notificationService = new NotificationService();
+        this.statusBarService = statusBarService || null;
     }
 
     /**
@@ -31,6 +34,11 @@ export class ProcessingService {
         let tempDirPath: string | null = null;
         const zipFileName = path.basename(zipFilePath);
         let initialNotice: Notice | null = new Notice(`Processing ${zipFileName}...`, 0); // 0 для неопределенной длительности
+
+        // Обновляем статус в строке состояния
+        if (this.statusBarService) {
+            this.statusBarService.setProcessing(zipFileName);
+        }
 
         // Создаем NoteCreator с актуальными settings
         this.noteCreator = new NoteCreator(this.app, settings);
@@ -158,6 +166,15 @@ export class ProcessingService {
 
             if (initialNotice) initialNotice.hide();
 
+            // Обновляем статус после завершения
+            if (this.statusBarService) {
+                if (errorCount === 0 && importedCount > 0) {
+                    this.statusBarService.showTemporaryMessage(`Импортировано: ${importedCount}`, 3000);
+                } else if (errorCount > 0) {
+                    this.statusBarService.setError(`Ошибок: ${errorCount}`);
+                }
+            }
+
             this.notificationService.showBatchImportResult(importedCount, errorCount, 0, zipFileName);
 
             if (settings.deleteZipAfterImport && errorCount === 0 && importedCount > 0) { // Удаляем ZIP только если все успешно
@@ -176,6 +193,12 @@ export class ProcessingService {
 
         } catch (error) {
             if (initialNotice) initialNotice.hide();
+
+            // Обновляем статус при ошибке
+            if (this.statusBarService) {
+                this.statusBarService.setError(`Ошибка: ${error.message}`);
+            }
+
             console.error('Error processing ZIP file:', error);
             this.notificationService.showError(`An unexpected error occurred while processing ${zipFileName}: ${error.message}`);
         } finally {

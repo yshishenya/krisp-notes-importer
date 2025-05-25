@@ -1,7 +1,7 @@
 {
     "id": "krisp-notes-importer",
     "name": "Krisp Notes Importer",
-    "version": "3.0.1",
+    "version": "3.2.0",
     "minAppVersion": "0.15.0",
     "description": "Импорт заметок встреч Krisp в Obsidian. Полный UI настроек, автоматическое отслеживание папки, структурированные Markdown заметки с расширенной аналитикой, умными тегами и красивым оформлением callouts.",
     "author": "KrispImporter Team",
