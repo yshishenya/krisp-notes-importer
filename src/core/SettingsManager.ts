@@ -43,6 +43,15 @@ export class SettingsManager {
     }
 
     // Валидация настроек
+    /**
+     * Validates the configuration settings.
+     *
+     * This function checks various configuration settings to ensure they are valid, including paths, templates,
+     * duplicate strategies, and language settings. It collects any validation errors in an array and returns them
+     * along with a boolean indicating whether the settings are valid.
+     *
+     * @returns An object containing a `isValid` flag and an `errors` array with validation error messages.
+     */
     validateSettings(): { isValid: boolean; errors: string[] } {
         const errors: string[] = [];
 
@@ -87,6 +96,9 @@ export class SettingsManager {
     }
 
     // Получение настроек с валидацией
+    /**
+     * Validates settings and returns them with defaults if validation fails.
+     */
     getValidatedSettings(): KrispImporterSettings {
         const validation = this.validateSettings();
         if (!validation.isValid) {
@@ -98,6 +110,13 @@ export class SettingsManager {
     }
 
     // Получение настроек с заполнением пустых значений по умолчанию
+    /**
+     * Retrieves and merges user settings with default settings, ensuring all required fields are properly set.
+     *
+     * This function first combines the default settings with any provided user settings. It then validates and normalizes specific fields such as folder paths, templates, and enums like `duplicateStrategy` and `language`.
+     *
+     * @returns Merged settings object with defaults applied where necessary.
+     */
     private getSettingsWithDefaults(): KrispImporterSettings {
         return {
             ...DEFAULT_SETTINGS,
