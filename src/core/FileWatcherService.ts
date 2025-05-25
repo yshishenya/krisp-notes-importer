@@ -61,6 +61,7 @@ export class FileWatcherService {
 
             // Создаем watcher для отслеживания изменений в папке
             this.watcher = fs.watch(folderPath, { persistent: true }, (eventType, filename) => {
+                console.log(`[FileWatcher] Event detected: ${eventType}, filename: ${filename}`);
                 if (eventType === 'rename' && filename) {
                     this.handleFileEvent(filename);
                 }
@@ -128,9 +129,11 @@ export class FileWatcherService {
      * Обработать событие файловой системы
      */
     private async handleFileEvent(filename: string): Promise<void> {
+        console.log(`[FileWatcher] Processing file event for: ${filename}`);
         try {
             // Проверяем что файл имеет расширение .zip
             if (!filename.toLowerCase().endsWith('.zip')) {
+                console.log(`[FileWatcher] Ignoring non-ZIP file: ${filename}`);
                 return;
             }
 
@@ -219,6 +222,9 @@ export class FileWatcherService {
      */
     private async processNewZipFile(zipFilePath: string, settings: KrispImporterSettings): Promise<void> {
         try {
+            console.log(`[FileWatcher] Processing new ZIP file: ${zipFilePath}`);
+            console.log(`[FileWatcher] Settings - deleteZipAfterImport: ${settings.deleteZipAfterImport}`);
+
             this.notificationService.showInfo(`Обнаружен новый файл: ${path.basename(zipFilePath)}`);
 
             // Обрабатываем файл через ProcessingService

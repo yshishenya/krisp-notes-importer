@@ -177,13 +177,24 @@ export class ProcessingService {
 
             this.notificationService.showBatchImportResult(importedCount, errorCount, 0, zipFileName);
 
+            // Проверяем настройку удаления ZIP-файла
+            console.log(`[DEBUG] deleteZipAfterImport setting: ${settings.deleteZipAfterImport}`);
+            console.log(`[DEBUG] errorCount: ${errorCount}, importedCount: ${importedCount}`);
+
             if (settings.deleteZipAfterImport && errorCount === 0 && importedCount > 0) { // Удаляем ZIP только если все успешно
                 try {
+                    console.log(`[DEBUG] Attempting to delete ZIP file: ${zipFilePath}`);
                     await fsPromises.rm(zipFilePath);
                     this.notificationService.showInfo(`Deleted original ZIP file: ${zipFileName}`);
+                    console.log(`[DEBUG] Successfully deleted ZIP file: ${zipFilePath}`);
                 } catch (e) {
+                    console.error(`[DEBUG] Failed to delete ZIP file:`, e);
                     this.notificationService.showError(`Failed to delete original ZIP file ${zipFileName}: ${e.message}`);
                 }
+            } else if (settings.deleteZipAfterImport) {
+                console.log(`[DEBUG] ZIP file not deleted due to errors or no imports. errorCount: ${errorCount}, importedCount: ${importedCount}`);
+            } else {
+                console.log(`[DEBUG] ZIP file deletion disabled in settings`);
             }
 
             // Опционально открываем последнюю созданную заметку (если импортирована одна)

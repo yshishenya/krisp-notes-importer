@@ -94,6 +94,17 @@ export default class KrispNotesImporterPlugin extends Plugin {
 			}
 		});
 
+		// Команда для отладки настроек
+		this.addCommand({
+			id: 'debug-settings',
+			name: 'Krisp Importer: Debug current settings',
+			callback: () => {
+				const settings = this.settingsManager.getAllSettings();
+				console.log('[Krisp Importer] Current settings:', settings);
+				new Notice(`Settings logged to console. deleteZipAfterImport: ${settings.deleteZipAfterImport}`, 5000);
+			}
+		});
+
 		// Автозапуск отслеживания если включено в настройках
 		const autoScanEnabled = this.settingsManager.getSetting('autoScanEnabled');
 		const watchedPath = this.settingsManager.getSetting('watchedFolderPath');
