@@ -105,6 +105,29 @@ export default class KrispNotesImporterPlugin extends Plugin {
 			}
 		});
 
+		// Команда для проверки статуса отслеживания
+		this.addCommand({
+			id: 'check-watching-status',
+			name: 'Krisp Importer: Check watching status',
+			callback: () => {
+				const isWatching = this.fileWatcherService.isCurrentlyWatching();
+				const watchedPath = this.fileWatcherService.getWatchedPath();
+				const autoScanEnabled = this.settingsManager.getSetting('autoScanEnabled');
+
+				console.log('[Krisp Importer] Watching status:', {
+					isWatching,
+					watchedPath,
+					autoScanEnabled
+				});
+
+				const statusMessage = isWatching
+					? `✅ Отслеживание активно: ${watchedPath}`
+					: `❌ Отслеживание неактивно. AutoScan в настройках: ${autoScanEnabled ? 'включен' : 'выключен'}`;
+
+				new Notice(statusMessage, 7000);
+			}
+		});
+
 		// Автозапуск отслеживания если включено в настройках
 		const autoScanEnabled = this.settingsManager.getSetting('autoScanEnabled');
 		const watchedPath = this.settingsManager.getSetting('watchedFolderPath');
