@@ -9,8 +9,8 @@
 node_modules
 
 # Собранные файлы в корне (теперь они в dist/)
-main.js
-styles.css
+# main.js - нужен для релиза
+# styles.css - нужен для релиза
 
 # Exclude sourcemaps
 *.map
