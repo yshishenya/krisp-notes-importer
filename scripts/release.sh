@@ -88,7 +88,7 @@ rm manifest.json.bak
 
 # Обновление версии в SettingsTab.ts
 log "Обновляю версию в SettingsTab.ts..."
-sed -i.bak "s/version.*: v$CURRENT_VERSION/version.*: v$NEW_VERSION/" src/ui/SettingsTab.ts
+sed -i.bak "s/version'\\): v$CURRENT_VERSION/version'\\): v$NEW_VERSION/" src/ui/SettingsTab.ts
 rm src/ui/SettingsTab.ts.bak
 
 # Сборка проекта
