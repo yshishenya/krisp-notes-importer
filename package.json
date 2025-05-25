@@ -1,12 +1,12 @@
 {
 	"name": "krisp-notes-importer",
-	  "version": "3.3.6",
+	  "version": "3.3.7",
 	"description": "Импортирует заметки и аудио из ZIP-архивов Krisp в Obsidian.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"dist": "npm run build && cp main.js dist/ && cp manifest.json dist/ && cp styles.css dist/ && mkdir -p dist/krisp-notes-importer && cp main.js manifest.json styles.css dist/krisp-notes-importer/ && cd dist && zip -r krisp-notes-importer.zip krisp-notes-importer/ && cd ..",
+		"dist": "npm run build && mkdir -p dist && cp main.js manifest.json styles.css dist/ && cd dist && zip -r krisp-notes-importer.zip main.js manifest.json styles.css && cd ..",
 		"clean": "rm -f main.js styles.css *.map"
 	},
 	"keywords": ["obsidian", "plugin", "krisp", "import"],
