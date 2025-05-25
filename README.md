@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)
-![Version](https://img.shields.io/badge/Version-3.3.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.3.8-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 
@@ -270,7 +270,7 @@ npm run build
 
 **Нужна помощь?**
 
-[📖 Руководство пользователя](./docs/UserGuide.MD) • [⚙️ Настройки](./docs/SettingsUI.MD) • [🔧 Для разработчиков](./DEVELOPMENT.md)
+[📖 Руководство пользователя](./docs/UserGuide.MD) • [⚙️ Настройки](./docs/SettingsUI.MD) • [🔧 Для разработчиков](./DEVELOPMENT.md) • [🚀 Релизы](./docs/RELEASE_GUIDE.md)
 
 </div>
 
