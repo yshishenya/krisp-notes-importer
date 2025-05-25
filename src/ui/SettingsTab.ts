@@ -308,7 +308,7 @@ export class KrispSettingsTab extends PluginSettingTab {
                                 clearBtn.onclick = () => {
                                     plugin.loggingService.clearLogs();
                                     this.close();
-                                    new Notice('🗑️ Логи очищены', 3000);
+                                    new Notice('🗑️ Logs cleared', 3000);
                                 };
 
                                 const closeBtn = buttonContainer.createEl('button', { text: 'Закрыть' });
@@ -349,7 +349,7 @@ export class KrispSettingsTab extends PluginSettingTab {
 
                         modal.open();
                     } else {
-                        new Notice('❌ LoggingService недоступен', 5000);
+                        new Notice('❌ LoggingService unavailable', 5000);
                     }
                 }));
 
@@ -364,34 +364,35 @@ export class KrispSettingsTab extends PluginSettingTab {
                     const watchedFolder = plugin.settingsManager.getSetting('watchedFolderPath');
 
                     if (!watchedFolder) {
-                        new Notice('❌ Не указана отслеживаемая папка', 5000);
+                        new Notice(`❌ ${this.localization.t('notifications.error.watchingFailed', { error: 'No watched folder specified' })}`, 5000);
                         return;
                     }
 
-                    new Notice('🔄 Начинаю массовый импорт...', 3000);
+                    new Notice(`🔄 ${this.localization.t('notifications.info.scanningFolder')}`, 3000);
 
                     try {
                         // Используем FileWatcherService для сканирования
                         if (plugin.fileWatcher && plugin.fileWatcher.scanExistingFiles) {
                             await plugin.fileWatcher.scanExistingFiles();
-                            new Notice('✅ Массовый импорт завершен!', 5000);
+                            new Notice(`✅ Mass import completed successfully!`, 5000);
                         } else {
-                            new Notice('❌ FileWatcherService недоступен', 5000);
+                            new Notice('❌ FileWatcherService unavailable', 5000);
                         }
                     } catch (error) {
-                        console.error('[Krisp Importer] Ошибка массового импорта:', error);
-                        new Notice(`❌ Ошибка массового импорта: ${error.message}`, 8000);
+                        console.error('[Krisp Importer] Mass import error:', error);
+                        new Notice(`❌ Mass import error: ${error.message}`, 8000);
                     }
                 }));
 
         new Setting(containerEl)
-            .setName('Тестовый импорт')
-            .setDesc('Выбрать ZIP-файл для тестового импорта с текущими настройками')
+            .setName(this.localization.t('settings.buttons.testImport'))
+            .setDesc('Select ZIP file for test import with current settings')
             .addButton(button => button
-                .setButtonText('Тестовый импорт')
+                .setButtonText(this.localization.t('settings.buttons.testImport'))
                 .onClick(async () => {
                                         // Создаем модальное окно для ввода пути к файлу
                     const plugin = this.plugin;
+                    const localization = this.localization;
                     const modal = new (class extends Modal {
                         result: string = '';
 
@@ -401,10 +402,10 @@ export class KrispSettingsTab extends PluginSettingTab {
 
                         onOpen() {
                             const { contentEl } = this;
-                            contentEl.createEl('h2', { text: 'Тестовый импорт ZIP-файла' });
+                            contentEl.createEl('h2', { text: localization.t('modals.testImport.title') });
 
                             contentEl.createEl('p', {
-                                text: 'Введите полный путь к ZIP-файлу Krisp для тестового импорта:'
+                                text: localization.t('modals.testImport.placeholder')
                             });
 
                             const inputEl = contentEl.createEl('input', {
@@ -419,7 +420,7 @@ export class KrispSettingsTab extends PluginSettingTab {
                             buttonContainer.style.gap = '10px';
                             buttonContainer.style.justifyContent = 'flex-end';
 
-                            const importBtn = buttonContainer.createEl('button', { text: 'Импортировать' });
+                            const importBtn = buttonContainer.createEl('button', { text: localization.t('modals.testImport.button') });
                             importBtn.className = 'mod-cta';
                             importBtn.onclick = async () => {
                                 const filePath = inputEl.value.trim();
@@ -431,20 +432,20 @@ export class KrispSettingsTab extends PluginSettingTab {
                                     const pluginInstance = plugin as any;
                                     if (pluginInstance && pluginInstance.processingService) {
                                         try {
-                                            new Notice('🧪 Выполняю тестовый импорт...', 3000);
+                                            new Notice(`🧪 ${localization.t('notifications.info.processing', { file: 'test file' })}`, 3000);
                                             await pluginInstance.processingService.processZipFile(filePath);
-                                            new Notice('✅ Тестовый импорт завершен успешно!', 5000);
+                                            new Notice(`✅ Test import completed successfully!`, 5000);
                                         } catch (error) {
-                                            console.error('[Krisp Importer] Ошибка тестового импорта:', error);
-                                            new Notice(`❌ Ошибка тестового импорта: ${error.message}`, 8000);
+                                            console.error('[Krisp Importer] Test import error:', error);
+                                            new Notice(`❌ Test import error: ${error.message}`, 8000);
                                         }
                                     } else {
-                                        new Notice('❌ ProcessingService недоступен', 5000);
+                                        new Notice('❌ ProcessingService unavailable', 5000);
                                     }
                                 }
                             };
 
-                            const cancelBtn = buttonContainer.createEl('button', { text: 'Отмена' });
+                            const cancelBtn = buttonContainer.createEl('button', { text: localization.t('modals.confirmReset.cancel') });
                             cancelBtn.onclick = () => this.close();
 
                             inputEl.focus();
@@ -465,16 +466,16 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         // Секция: Шаблон содержимого
-        containerEl.createEl('h2', { text: '📝 Шаблон содержимого заметки' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.sections.templates') });
 
         const templateDesc = containerEl.createEl('p', {
-            text: 'Настройте шаблон для создаваемых заметок. Доступные переменные: {{meetingTitle}}, {{date}}, {{time}}, {{participants}}, {{summary}}, {{actionItems}}, {{keyPoints}}, {{formattedTranscript}}, {{audioPathForYaml}} и другие.'
+            text: this.localization.t('settings.fields.noteContentTemplate.desc')
         });
         templateDesc.style.fontSize = '0.9em';
         templateDesc.style.color = 'var(--text-muted)';
 
         new Setting(containerEl)
-            .setName('Шаблон заметки')
+            .setName(this.localization.t('settings.fields.noteContentTemplate.name'))
             .setDesc('')
             .addTextArea(text => {
                 text.inputEl.rows = 10;
@@ -482,7 +483,7 @@ export class KrispSettingsTab extends PluginSettingTab {
                 text.inputEl.style.fontFamily = 'monospace';
                 text.inputEl.style.fontSize = '0.85em';
                 return text
-                    .setPlaceholder('Введите шаблон заметки...')
+                    .setPlaceholder('Enter note template...')
                     .setValue(this.plugin.settingsManager.getSetting('noteContentTemplate'))
                     .onChange(async (value) => {
                         await this.plugin.settingsManager.updateSetting('noteContentTemplate', value);
@@ -490,10 +491,10 @@ export class KrispSettingsTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName('Восстановить шаблон по умолчанию')
-            .setDesc('Вернуть стандартный шаблон заметки')
+            .setName(this.localization.t('settings.buttons.restoreTemplate'))
+            .setDesc('Restore default note template')
             .addButton(button => button
-                .setButtonText('Восстановить')
+                .setButtonText(this.localization.t('settings.buttons.restoreTemplate'))
                 .setCta()
                 .onClick(async () => {
                     await this.plugin.settingsManager.updateSetting('noteContentTemplate', DEFAULT_SETTINGS.noteContentTemplate);
@@ -501,11 +502,11 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         // Секция: Управление настройками
-        containerEl.createEl('h2', { text: '🔧 Управление настройками' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.sections.advanced') });
 
         new Setting(containerEl)
             .setName(this.localization.t('settings.buttons.resetSettings'))
-            .setDesc('Вернуть все настройки плагина к значениям по умолчанию')
+            .setDesc('Reset all plugin settings to default values')
             .addButton(button => button
                 .setButtonText(this.localization.t('settings.buttons.resetSettings'))
                 .setClass('mod-warning')
@@ -546,7 +547,7 @@ export class KrispSettingsTab extends PluginSettingTab {
                                             await pluginInstance.settingsManager.updateSetting(key, value);
                                         }
 
-                                        new Notice('✅ Все настройки сброшены к значениям по умолчанию', 5000);
+                                        new Notice(`✅ ${localization.t('notifications.success.settingsReset')}`, 5000);
 
                                         // Перерисовываем интерфейс настроек
                                         const settingsTab = pluginInstance.settingsTab;
@@ -554,11 +555,11 @@ export class KrispSettingsTab extends PluginSettingTab {
                                             settingsTab.display();
                                         }
                                     } catch (error) {
-                                        console.error('[Krisp Importer] Ошибка сброса настроек:', error);
-                                        new Notice(`❌ Ошибка сброса настроек: ${error.message}`, 8000);
+                                        console.error('[Krisp Importer] Settings reset error:', error);
+                                        new Notice(`❌ Settings reset error: ${error.message}`, 8000);
                                     }
                                 } else {
-                                    new Notice('❌ Плагин недоступен для сброса настроек', 5000);
+                                    new Notice('❌ Plugin unavailable for settings reset', 5000);
                                 }
                             };
 

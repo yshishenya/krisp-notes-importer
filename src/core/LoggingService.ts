@@ -247,11 +247,11 @@ export class LoggingService {
         try {
             const logsText = this.exportLogsAsText();
             await navigator.clipboard.writeText(logsText);
-            new Notice('📋 Логи скопированы в буфер обмена', 3000);
+            new Notice('📋 Logs copied to clipboard', 3000);
             this.info('System', 'Логи скопированы в буфер обмена');
         } catch (error) {
             this.error('System', 'Ошибка копирования логов в буфер обмена', error);
-            new Notice('❌ Ошибка копирования логов', 5000);
+            new Notice('❌ Error copying logs', 5000);
         }
     }
 }

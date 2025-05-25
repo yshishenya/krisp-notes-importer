@@ -39,14 +39,14 @@ export class FileWatcherService {
         }
 
         if (!folderPath || folderPath.trim() === '') {
-            this.notificationService.showError('Не указана папка для отслеживания');
+            this.notificationService.showError('No watched folder specified');
             return;
         }
 
         try {
             // Проверяем существование папки
             if (!fs.existsSync(folderPath)) {
-                this.notificationService.showError(`Папка не существует: ${folderPath}`);
+                this.notificationService.showError(`Folder does not exist: ${folderPath}`);
                 return;
             }
 

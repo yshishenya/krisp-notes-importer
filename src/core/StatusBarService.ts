@@ -142,7 +142,7 @@ export class StatusBarService {
      */
     setWatching(folderPath?: string): void {
         this.currentStatus = PluginStatus.WATCHING;
-        this.currentMessage = folderPath ? `Папка: ${folderPath}` : '';
+        this.currentMessage = folderPath ? `Watching: ${folderPath}` : '';
         this.updateDisplay();
     }
 

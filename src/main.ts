@@ -27,7 +27,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 
 		this.settingsManager = new SettingsManager(this);
 		await this.settingsManager.loadSettings();
-		this.loggingService.info('Plugin', 'Настройки загружены');
+		        this.loggingService.info('Plugin', 'Settings loaded');
 
 		// Инициализируем LocalizationService
 		const currentLanguage = this.settingsManager.getSetting('language') as SupportedLanguage || 'en';
@@ -76,7 +76,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 					this.statusBarService.setWatching(watchedPath);
 					await this.fileWatcherService.startWatching(watchedPath);
 				} else {
-					this.statusBarService.setError('Не указана папка для отслеживания');
+					            this.statusBarService.setError('No watched folder specified');
 					new Notice('Please set the watched folder path in settings first.');
 				}
 			}

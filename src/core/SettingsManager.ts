@@ -61,11 +61,11 @@ export class SettingsManager {
 
         // Проверка шаблонов
         if (!this.settings.noteNameTemplate || this.settings.noteNameTemplate.trim() === '') {
-            errors.push('Шаблон имени заметки не может быть пустым');
+            errors.push('Note name template cannot be empty');
         }
 
         if (!this.settings.attachmentNameTemplate || this.settings.attachmentNameTemplate.trim() === '') {
-            errors.push('Шаблон имени аудиофайла не может быть пустым');
+            errors.push('Audio name template cannot be empty');
         }
 
         // Проверка стратегии дубликатов
@@ -90,7 +90,7 @@ export class SettingsManager {
     getValidatedSettings(): KrispImporterSettings {
         const validation = this.validateSettings();
         if (!validation.isValid) {
-            console.warn('[Krisp Importer] Настройки содержат ошибки:', validation.errors);
+            console.warn('[Krisp Importer] Settings contain errors:', validation.errors);
             // Возвращаем настройки с исправленными значениями
             return this.getSettingsWithDefaults();
         }
