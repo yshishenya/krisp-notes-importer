@@ -1,0 +1,113 @@
+/* Krisp Notes Importer Plugin Styles */
+
+/* Стили для статус-бара */
+.krisp-status-bar-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.krisp-status-bar-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.krisp-status-bar-item.idle {
+    color: var(--text-muted);
+}
+
+.krisp-status-bar-item.watching {
+    color: var(--color-green);
+}
+
+.krisp-status-bar-item.processing {
+    color: var(--color-blue);
+}
+
+.krisp-status-bar-item.error {
+    color: var(--color-red);
+}
+
+/* Анимация для иконки обработки */
+.krisp-status-icon.spinning {
+    animation: krisp-spin 1s linear infinite;
+}
+
+@keyframes krisp-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Стили для настроек плагина */
+.krisp-settings-section {
+    margin-bottom: 20px;
+}
+
+.krisp-settings-info {
+    padding: 15px;
+    background-color: var(--background-secondary);
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.krisp-settings-tip {
+    padding: 10px;
+    background-color: var(--background-primary-alt);
+    border-radius: 5px;
+    margin-top: 10px;
+    border-left: 4px solid var(--interactive-accent);
+}
+
+/* Стили для модальных окон */
+.krisp-modal-content {
+    padding: 20px;
+}
+
+.krisp-modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+/* Стили для логов */
+.krisp-logs-container {
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
+    padding: 10px;
+    background-color: var(--background-primary-alt);
+    font-family: var(--font-monospace);
+    font-size: 0.8em;
+    white-space: pre-wrap;
+}
+
+.krisp-logs-stats {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: var(--background-secondary);
+    border-radius: 5px;
+}
+
+/* Стили для уведомлений */
+.notice.krisp-notice {
+    border-left: 4px solid var(--interactive-accent);
+}
+
+.notice.krisp-notice.success {
+    border-left-color: var(--color-green);
+}
+
+.notice.krisp-notice.error {
+    border-left-color: var(--color-red);
+}
+
+.notice.krisp-notice.warning {
+    border-left-color: var(--color-orange);
+}

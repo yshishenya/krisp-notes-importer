@@ -215,23 +215,25 @@ const EN_STRINGS: LocalizedStrings = {
             restoreTemplate: "Restore Default Template"
         },
         info: {
-            title: "Plugin Status",
+            title: "Plugin Information",
             version: "Version",
-            status: "Current Status",
+            status: "Status",
             features: [
                 "✅ Manual ZIP import",
                 "✅ Automatic folder watching",
-                "✅ Beautiful note formatting",
-                "✅ Advanced analytics",
-                "✅ Full UI settings",
-                "✅ Logging system"
+                "✅ Beautiful note formatting with callouts",
+                "✅ Advanced participant analytics",
+                "✅ Complete UI settings",
+                "✅ Logging and diagnostic system",
+                "✅ Bilingual support (English/Russian)"
             ],
             commands: [
                 "Import ZIP file manually",
-                "Start/Stop auto-watching",
+                "Start auto-watching folder",
+                "Stop auto-watching",
                 "Scan existing files",
                 "Check watching status",
-                "Debug settings"
+                "Debug current settings"
             ]
         }
     },

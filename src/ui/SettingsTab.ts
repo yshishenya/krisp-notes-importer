@@ -67,8 +67,8 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Автоматическое отслеживание')
-            .setDesc('Автоматически сканировать папку и импортировать новые встречи (требует FileWatcherService)')
+            .setName(this.localization.t('settings.fields.autoScan.name'))
+            .setDesc(this.localization.t('settings.fields.autoScan.desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settingsManager.getSetting('autoScanEnabled'))
                 .onChange(async (value) => {
@@ -76,11 +76,11 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         // Секция: Сохранение в Obsidian
-        containerEl.createEl('h2', { text: '💾 Сохранение в Obsidian' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.sections.storage') });
 
         new Setting(containerEl)
-            .setName('Папка для заметок')
-            .setDesc('Путь в хранилище Obsidian для сохранения Markdown-заметок')
+            .setName(this.localization.t('settings.fields.notesFolder.name'))
+            .setDesc(this.localization.t('settings.fields.notesFolder.desc'))
             .addText(text => text
                 .setPlaceholder('KrispNotes/Notes')
                 .setValue(this.plugin.settingsManager.getSetting('notesFolderPath'))
@@ -89,8 +89,8 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Папка для аудиофайлов')
-            .setDesc('Путь в хранилище Obsidian для сохранения аудиозаписей')
+            .setName(this.localization.t('settings.fields.attachmentsFolder.name'))
+            .setDesc(this.localization.t('settings.fields.attachmentsFolder.desc'))
             .addText(text => text
                 .setPlaceholder('KrispNotes/Attachments')
                 .setValue(this.plugin.settingsManager.getSetting('attachmentsFolderPath'))
@@ -99,11 +99,11 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         // Секция: Шаблоны и именование
-        containerEl.createEl('h2', { text: '🏷️ Шаблоны и именование' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.sections.templates') });
 
         new Setting(containerEl)
-            .setName('Шаблон имени заметок')
-            .setDesc('Формат имен файлов заметок. Доступные переменные: {{YYYY}}, {{MM}}, {{DD}}, {{HHMM}}, {{meetingTitle}}')
+            .setName(this.localization.t('settings.fields.noteNameTemplate.name'))
+            .setDesc(this.localization.t('settings.fields.noteNameTemplate.desc'))
             .addText(text => text
                 .setPlaceholder('{{YYYY}}-{{MM}}-{{DD}}_{{HHMM}}_{{meetingTitle}}')
                 .setValue(this.plugin.settingsManager.getSetting('noteNameTemplate'))
@@ -112,8 +112,8 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Шаблон имени аудиофайлов')
-            .setDesc('Формат имен аудиофайлов. Используйте те же переменные что и для заметок')
+            .setName(this.localization.t('settings.fields.attachmentNameTemplate.name'))
+            .setDesc(this.localization.t('settings.fields.attachmentNameTemplate.desc'))
             .addText(text => text
                 .setPlaceholder('{{YYYY}}-{{MM}}-{{DD}}_{{meetingTitle}}_audio')
                 .setValue(this.plugin.settingsManager.getSetting('attachmentNameTemplate'))
@@ -122,26 +122,26 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         // Секция: Обработка дубликатов
-        containerEl.createEl('h2', { text: '🔄 Обработка дубликатов' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.sections.duplicates') });
 
         new Setting(containerEl)
-            .setName('Стратегия при дубликатах')
-            .setDesc('Что делать при обнаружении существующей заметки с таким же именем')
+            .setName(this.localization.t('settings.fields.duplicateStrategy.name'))
+            .setDesc(this.localization.t('settings.fields.duplicateStrategy.desc'))
             .addDropdown(dropdown => dropdown
-                .addOption('skip', 'Пропустить импорт')
-                .addOption('overwrite', 'Перезаписать существующую')
-                .addOption('rename', 'Создать с суффиксом (рекомендуется)')
+                .addOption('skip', this.localization.t('settings.fields.duplicateStrategy.options.skip'))
+                .addOption('overwrite', this.localization.t('settings.fields.duplicateStrategy.options.overwrite'))
+                .addOption('rename', this.localization.t('settings.fields.duplicateStrategy.options.rename'))
                 .setValue(this.plugin.settingsManager.getSetting('duplicateStrategy'))
                 .onChange(async (value: 'skip' | 'overwrite' | 'rename') => {
                     await this.plugin.settingsManager.updateSetting('duplicateStrategy', value);
                 }));
 
         // Секция: Действия после импорта
-        containerEl.createEl('h2', { text: '⚡ Действия после импорта' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.sections.postImport') });
 
         new Setting(containerEl)
-            .setName('Открывать заметку')
-            .setDesc('Автоматически открывать созданную заметку после импорта')
+            .setName(this.localization.t('settings.fields.openNoteAfterImport.name'))
+            .setDesc(this.localization.t('settings.fields.openNoteAfterImport.desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settingsManager.getSetting('openNoteAfterImport'))
                 .onChange(async (value) => {
@@ -149,8 +149,8 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Удалять ZIP-файл')
-            .setDesc('Автоматически удалять исходный ZIP-архив после успешного импорта')
+            .setName(this.localization.t('settings.fields.deleteZipAfterImport.name'))
+            .setDesc(this.localization.t('settings.fields.deleteZipAfterImport.desc'))
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settingsManager.getSetting('deleteZipAfterImport'))
                 .onChange(async (value) => {
@@ -158,46 +158,112 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         // Секция: Дополнительные настройки
-        containerEl.createEl('h2', { text: '🔧 Дополнительные настройки' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.sections.advanced') });
 
+        // Шаблон содержимого заметки
         new Setting(containerEl)
-            .setName('Язык для дат')
-            .setDesc('Язык для распознавания месяцев в названиях встреч')
-            .addDropdown(dropdown => dropdown
-                .addOption('en', 'English')
-                .addOption('ru', 'Русский')
-                .setValue(this.plugin.settingsManager.getSetting('language'))
-                .onChange(async (value) => {
-                    await this.plugin.settingsManager.updateSetting('language', value);
+            .setName(this.localization.t('settings.fields.noteContentTemplate.name'))
+            .setDesc(this.localization.t('settings.fields.noteContentTemplate.desc'))
+            .addTextArea(text => {
+                text.setValue(this.plugin.settingsManager.getSetting('noteContentTemplate'))
+                    .onChange(async (value) => {
+                        await this.plugin.settingsManager.updateSetting('noteContentTemplate', value);
+                    });
+                text.inputEl.rows = 10;
+                text.inputEl.cols = 50;
+                return text;
+            })
+            .addButton(button => button
+                .setButtonText(this.localization.t('settings.buttons.restoreTemplate'))
+                .onClick(async () => {
+                    await this.plugin.settingsManager.updateSetting('noteContentTemplate', DEFAULT_SETTINGS.noteContentTemplate);
+                    this.display(); // Перерисовываем интерфейс
+                    new Notice(this.localization.t('notifications.success.settingsReset'), 3000);
+                }));
+
+        // Кнопки действий
+        new Setting(containerEl)
+            .setName(this.localization.t('settings.buttons.testImport'))
+            .setDesc('Выберите ZIP-файл для тестового импорта с текущими настройками')
+            .addButton(button => button
+                .setButtonText(this.localization.t('settings.buttons.testImport'))
+                .setClass('mod-cta')
+                .onClick(async () => {
+                    // Показываем модальное окно для тестового импорта
+                    const localization = this.localization;
+                    const plugin = this.plugin;
+
+                    const modal = new (class extends Modal {
+                        constructor(app: App) {
+                            super(app);
+                        }
+
+                        onOpen() {
+                            const { contentEl } = this;
+                            contentEl.createEl('h2', { text: localization.t('modals.testImport.title') });
+
+                            const inputEl = contentEl.createEl('input', {
+                                type: 'text',
+                                placeholder: localization.t('modals.testImport.placeholder')
+                            });
+                            inputEl.style.width = '100%';
+                            inputEl.style.marginBottom = '10px';
+
+                            const buttonEl = contentEl.createEl('button', {
+                                text: localization.t('modals.testImport.button'),
+                                cls: 'mod-cta'
+                            });
+
+                            buttonEl.onclick = async () => {
+                                const zipPath = inputEl.value.trim();
+                                if (zipPath) {
+                                    this.close();
+                                    // Вызываем команду импорта
+                                    const pluginAny = plugin as any;
+                                    if (pluginAny.processingService) {
+                                        try {
+                                            await pluginAny.processingService.processZipFile(zipPath);
+                                        } catch (error) {
+                                            new Notice(`Error: ${error.message}`, 5000);
+                                        }
+                                    }
+                                }
+                            };
+                        }
+
+                        onClose() {
+                            const { contentEl } = this;
+                            contentEl.empty();
+                        }
+                    })(this.app);
+                    modal.open();
                 }));
 
         new Setting(containerEl)
-            .setName('Проверка настроек')
-            .setDesc('Проверить корректность всех настроек плагина')
+            .setName(this.localization.t('settings.buttons.massImport'))
+            .setDesc('Импортировать все ZIP-файлы из отслеживаемой папки')
             .addButton(button => button
-                .setButtonText('Проверить настройки')
-                .setClass('mod-cta')
+                .setButtonText(this.localization.t('settings.buttons.massImport'))
                 .onClick(async () => {
-                    // Нужно добавить метод validateSettings в интерфейс
+                    // Массовый импорт
                     const plugin = this.plugin as any;
-                    if (plugin.settingsManager.validateSettings) {
-                        const validation = plugin.settingsManager.validateSettings();
-                        if (validation.isValid) {
-                            new Notice('✅ Все настройки корректны!', 5000);
-                        } else {
-                            new Notice(`❌ Найдены ошибки в настройках:\n${validation.errors.join('\n')}`, 10000);
-                            console.error('[Krisp Importer] Ошибки настроек:', validation.errors);
+                    if (plugin.fileWatcherService && plugin.fileWatcherService.scanExistingFiles) {
+                        try {
+                            await plugin.fileWatcherService.scanExistingFiles();
+                            new Notice(this.localization.t('notifications.info.scanningFolder'), 3000);
+                        } catch (error) {
+                            new Notice(`Error: ${error.message}`, 5000);
                         }
                     } else {
-                        new Notice('⚠️ Метод валидации недоступен', 3000);
+                        new Notice('FileWatcherService not available', 3000);
                     }
                 }));
 
         new Setting(containerEl)
-            .setName('Показать логи плагина')
+            .setName(this.localization.t('settings.buttons.showLogs'))
             .setDesc('Просмотреть детальные логи работы плагина для диагностики проблем')
             .addButton(button => button
-                .setButtonText('Показать логи')
+                .setButtonText(this.localization.t('settings.buttons.showLogs'))
                 .onClick(async () => {
                     const plugin = this.plugin as any;
                     if (plugin.loggingService) {
@@ -438,14 +504,15 @@ export class KrispSettingsTab extends PluginSettingTab {
         containerEl.createEl('h2', { text: '🔧 Управление настройками' });
 
         new Setting(containerEl)
-            .setName('Сбросить все настройки')
+            .setName(this.localization.t('settings.buttons.resetSettings'))
             .setDesc('Вернуть все настройки плагина к значениям по умолчанию')
             .addButton(button => button
-                .setButtonText('Сбросить настройки')
+                .setButtonText(this.localization.t('settings.buttons.resetSettings'))
                 .setClass('mod-warning')
                 .onClick(async () => {
                     // Подтверждение сброса
                     const plugin = this.plugin;
+                    const localization = this.localization;
                     const confirmModal = new (class extends Modal {
                         constructor(app: App) {
                             super(app);
@@ -453,10 +520,10 @@ export class KrispSettingsTab extends PluginSettingTab {
 
                         onOpen() {
                             const { contentEl } = this;
-                            contentEl.createEl('h2', { text: '⚠️ Подтверждение сброса' });
+                            contentEl.createEl('h2', { text: localization.t('modals.confirmReset.title') });
 
                             contentEl.createEl('p', {
-                                text: 'Вы уверены, что хотите сбросить все настройки к значениям по умолчанию? Это действие нельзя отменить.'
+                                text: localization.t('modals.confirmReset.message')
                             });
 
                             const buttonContainer = contentEl.createEl('div');
@@ -465,7 +532,7 @@ export class KrispSettingsTab extends PluginSettingTab {
                             buttonContainer.style.justifyContent = 'flex-end';
                             buttonContainer.style.marginTop = '20px';
 
-                            const resetBtn = buttonContainer.createEl('button', { text: 'Сбросить' });
+                            const resetBtn = buttonContainer.createEl('button', { text: localization.t('modals.confirmReset.confirm') });
                             resetBtn.className = 'mod-warning';
                             resetBtn.onclick = async () => {
                                 this.close();
@@ -495,7 +562,7 @@ export class KrispSettingsTab extends PluginSettingTab {
                                 }
                             };
 
-                            const cancelBtn = buttonContainer.createEl('button', { text: 'Отмена' });
+                            const cancelBtn = buttonContainer.createEl('button', { text: localization.t('modals.confirmReset.cancel') });
                             cancelBtn.onclick = () => this.close();
                         }
 
@@ -509,14 +576,16 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
 
         // Секция: Информация о версии
-        containerEl.createEl('h2', { text: 'ℹ️ Информация о плагине' });
+        containerEl.createEl('h2', { text: this.localization.t('settings.info.title') });
 
         const versionInfo = containerEl.createEl('div');
-        versionInfo.createEl('p', { text: '🎯 Текущий статус: v3.0.1 - Полная функциональность' });
-        versionInfo.createEl('p', { text: '✅ Ручной импорт: Полностью работает' });
-        versionInfo.createEl('p', { text: '✅ Автоматическое отслеживание: Реализовано' });
-        versionInfo.createEl('p', { text: '✅ Все настройки: Доступны через UI' });
-        versionInfo.createEl('p', { text: '✅ Расширенная аналитика: Включена' });
+        versionInfo.createEl('p', { text: `${this.localization.t('settings.info.version')}: v3.3.0` });
+        versionInfo.createEl('p', { text: `${this.localization.t('settings.info.status')}: ${this.localization.t('settings.info.features.0')}` });
+
+        // Отображаем все функции
+        this.localization.getSettingsStrings().info.features.forEach(feature => {
+            versionInfo.createEl('p', { text: feature });
+        });
 
         const statusNote = containerEl.createEl('div');
         statusNote.style.padding = '15px';
@@ -525,11 +594,12 @@ export class KrispSettingsTab extends PluginSettingTab {
         statusNote.style.marginTop = '15px';
         statusNote.style.border = '1px solid var(--background-modifier-border)';
 
-        statusNote.createEl('h4', { text: '🚀 Доступные команды:' });
-        statusNote.createEl('p', { text: '• "Import ZIP file manually" - ручной импорт файла' });
-        statusNote.createEl('p', { text: '• "Start auto-watching folder" - запуск автоматического отслеживания' });
-        statusNote.createEl('p', { text: '• "Stop auto-watching" - остановка отслеживания' });
-        statusNote.createEl('p', { text: '• "Scan existing files in folder" - массовое сканирование' });
+        statusNote.createEl('h4', { text: '🚀 ' + (this.localization.getCurrentLanguage() === 'ru' ? 'Доступные команды:' : 'Available commands:') });
+
+        // Отображаем все команды
+        this.localization.getSettingsStrings().info.commands.forEach(command => {
+            statusNote.createEl('p', { text: `• ${command}` });
+        });
 
         const tipNote = containerEl.createEl('div');
         tipNote.style.padding = '10px';
