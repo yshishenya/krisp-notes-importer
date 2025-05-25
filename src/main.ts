@@ -7,6 +7,7 @@ import { FileWatcherService } from './core/FileWatcherService';
 import { NotificationService } from './core/NotificationService';
 import { LoggingService, LogLevel } from './core/LoggingService';
 import { StatusBarService } from './core/StatusBarService';
+import { LocalizationService, SupportedLanguage } from './core/LocalizationService';
 
 export default class KrispNotesImporterPlugin extends Plugin {
 	settingsManager: SettingsManager;
@@ -15,6 +16,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 	fileWatcherService: FileWatcherService;
 	loggingService: LoggingService;
 	statusBarService: StatusBarService;
+	localizationService: LocalizationService;
 
 	async onload() {
 		console.log('Loading Krisp Notes Importer plugin...');
@@ -26,6 +28,11 @@ export default class KrispNotesImporterPlugin extends Plugin {
 		this.settingsManager = new SettingsManager(this);
 		await this.settingsManager.loadSettings();
 		this.loggingService.info('Plugin', 'Настройки загружены');
+
+		// Инициализируем LocalizationService
+		const currentLanguage = this.settingsManager.getSetting('language') as SupportedLanguage || 'en';
+		this.localizationService = new LocalizationService(currentLanguage);
+		this.loggingService.info('Plugin', `Локализация инициализирована: ${currentLanguage}`);
 
 		this.notificationService = new NotificationService();
 		this.statusBarService = new StatusBarService(this);
@@ -43,7 +50,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'import-krisp-zip-manually',
-			name: 'Krisp Importer: Import ZIP file manually',
+			name: this.localizationService.t('commands.importZip'),
 			callback: () => {
 				this.loggingService.info('Commands', 'Запущена команда ручного импорта ZIP-файла');
 				new FilePathModal(this.app, async (filePath) => {
@@ -55,14 +62,14 @@ export default class KrispNotesImporterPlugin extends Plugin {
 						this.loggingService.warn('Commands', 'Попытка импорта с пустым путем к файлу');
 						new Notice('File path cannot be empty.');
 					}
-				}).open();
+				}, this.localizationService).open();
 			}
 		});
 
 		// Команды для FileWatcherService
 		this.addCommand({
 			id: 'start-auto-watching',
-			name: 'Krisp Importer: Start auto-watching folder',
+			name: this.localizationService.t('commands.startWatching'),
 			callback: async () => {
 				const watchedPath = this.settingsManager.getSetting('watchedFolderPath');
 				if (watchedPath && watchedPath.trim() !== '') {
@@ -77,7 +84,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'stop-auto-watching',
-			name: 'Krisp Importer: Stop auto-watching',
+			name: this.localizationService.t('commands.stopWatching'),
 			callback: async () => {
 				this.statusBarService.setIdle('Отслеживание остановлено');
 				await this.fileWatcherService.stopWatching();
@@ -86,7 +93,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'scan-existing-files',
-			name: 'Krisp Importer: Scan existing files in folder',
+			name: this.localizationService.t('commands.scanExisting'),
 			callback: async () => {
 				this.statusBarService.setProcessing('Сканирование файлов');
 				await this.fileWatcherService.scanExistingFiles();
@@ -97,7 +104,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 		// Команда для отладки настроек
 		this.addCommand({
 			id: 'debug-settings',
-			name: 'Krisp Importer: Debug current settings',
+			name: this.localizationService.t('commands.debugSettings'),
 			callback: () => {
 				const settings = this.settingsManager.getAllSettings();
 				console.log('[Krisp Importer] Current settings:', settings);
@@ -108,7 +115,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 		// Команда для проверки статуса отслеживания
 		this.addCommand({
 			id: 'check-watching-status',
-			name: 'Krisp Importer: Check watching status',
+			name: this.localizationService.t('commands.checkStatus'),
 			callback: () => {
 				const isWatching = this.fileWatcherService.isCurrentlyWatching();
 				const watchedPath = this.fileWatcherService.getWatchedPath();
@@ -165,21 +172,23 @@ export default class KrispNotesImporterPlugin extends Plugin {
 class FilePathModal extends Modal {
 	filePath: string;
 	onSubmitCallback: (filePath: string) => Promise<void>;
+	localization: LocalizationService;
 
-	constructor(app: App, onSubmitCallback: (filePath: string) => Promise<void>) {
+	constructor(app: App, onSubmitCallback: (filePath: string) => Promise<void>, localization: LocalizationService) {
 		super(app);
 		this.onSubmitCallback = onSubmitCallback;
+		this.localization = localization;
 	}
 
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h2', { text: 'Import Krisp ZIP File' });
+		contentEl.createEl('h2', { text: this.localization.t('modal.importZip.title') });
 
 		new Setting(contentEl)
-			.setName('Path to .zip file')
-			.setDesc('Enter the full path to the Krisp .zip file you want to import.')
+			.setName(this.localization.t('modal.importZip.pathLabel'))
+			.setDesc(this.localization.t('modal.importZip.pathDesc'))
 			.addText(text => {
 				text.setPlaceholder('/path/to/your/krisp_meeting.zip');
 				text.onChange(value => {
@@ -196,7 +205,7 @@ class FilePathModal extends Modal {
 
 		new Setting(contentEl)
 			.addButton(button => button
-				.setButtonText('Import')
+				.setButtonText(this.localization.t('modal.importZip.importButton'))
 				.setCta()
 				.onClick(() => {
 					this.submitForm();
@@ -208,7 +217,7 @@ class FilePathModal extends Modal {
 			this.onSubmitCallback(this.filePath.trim());
 			this.close();
 		} else {
-			new Notice('Please enter a file path.');
+			new Notice(this.localization.t('modal.importZip.emptyPathError'));
 		}
 	}
 

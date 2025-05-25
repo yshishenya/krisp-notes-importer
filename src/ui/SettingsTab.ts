@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting, Plugin, Notice, Modal } from 'obsidian';
 import { DEFAULT_SETTINGS } from '../interfaces';
+import { LocalizationService, SupportedLanguage } from '../core/LocalizationService';
 
 // Определяем интерфейс для плагина
 interface KrispNotesImporterPlugin extends Plugin {
@@ -7,14 +8,26 @@ interface KrispNotesImporterPlugin extends Plugin {
         getSetting: (key: string) => any;
         updateSetting: (key: string, value: any) => Promise<void>;
     };
+    localizationService?: LocalizationService;
 }
 
 export class KrispSettingsTab extends PluginSettingTab {
     plugin: KrispNotesImporterPlugin;
+    private localization: LocalizationService;
 
     constructor(app: App, plugin: KrispNotesImporterPlugin) {
         super(app, plugin);
         this.plugin = plugin;
+
+        // Инициализируем локализацию
+        const currentLanguage = this.plugin.settingsManager.getSetting('language') as SupportedLanguage || 'en';
+        this.localization = plugin.localizationService || new LocalizationService(currentLanguage);
+    }
+
+    private updateLanguage(newLanguage: SupportedLanguage): void {
+        this.localization.setLanguage(newLanguage);
+        // Перерисовываем интерфейс с новым языком
+        this.display();
     }
 
     display(): void {
@@ -22,17 +35,30 @@ export class KrispSettingsTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        containerEl.createEl('h1', { text: 'Krisp Notes Importer' });
+        containerEl.createEl('h1', { text: this.localization.t('settings.title') });
         containerEl.createEl('p', {
-            text: 'Настройки плагина для автоматического импорта заметок из Krisp в Obsidian'
+            text: this.localization.t('settings.title') + ' - ' + this.localization.t('settings.sections.basic')
         });
 
+        // Настройка языка интерфейса (в самом верху)
+        new Setting(containerEl)
+            .setName(this.localization.t('settings.fields.language.name'))
+            .setDesc(this.localization.t('settings.fields.language.desc'))
+            .addDropdown(dropdown => dropdown
+                .addOption('en', 'English')
+                .addOption('ru', 'Русский')
+                .setValue(this.plugin.settingsManager.getSetting('language'))
+                .onChange(async (value: SupportedLanguage) => {
+                    await this.plugin.settingsManager.updateSetting('language', value);
+                    this.updateLanguage(value);
+                }));
+
         // Секция: Основные настройки
-        containerEl.createEl('h2', { text: '📁 Основные настройки' });
+        containerEl.createEl('h2', { text: '🔧 ' + this.localization.t('settings.sections.basic') });
 
         new Setting(containerEl)
-            .setName('Отслеживаемая папка')
-            .setDesc('Полный путь к папке, где Krisp сохраняет ZIP-архивы встреч')
+            .setName(this.localization.t('settings.fields.watchedFolder.name'))
+            .setDesc(this.localization.t('settings.fields.watchedFolder.desc'))
             .addText(text => text
                 .setPlaceholder('/Users/username/Downloads/Krisp')
                 .setValue(this.plugin.settingsManager.getSetting('watchedFolderPath'))

@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)
-![Version](https://img.shields.io/badge/Version-3.2.4-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.3.0-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 
@@ -256,7 +256,7 @@ Full customization of note structure with variables for all meeting data.
 
 ## 📊 Project Status
 
-### 🎯 Current Version: **v3.2.4** - 99% Complete
+### 🎯 Current Version: **v3.3.0** - 99% Complete
 
 ### ✅ Fully Implemented:
 - ✅ Manual ZIP import with command palette
