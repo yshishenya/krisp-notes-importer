@@ -50,15 +50,19 @@
     *   `save()`: Сохранить настройки.
     *   `validate()`: Проверить корректность настроек (например, существование папок, если это применимо до запуска).
 
-### 2.3. `FileWatcherService` - Сервис отслеживания папки
+### 2.3. `FileWatcherService` - Сервис отслеживания папки ✅ **РЕАЛИЗОВАН v3.0.0**
 *   **Ответственность:**
     *   Мониторинг указанной в настройках папки на предмет появления новых `.zip` файлов.
-    *   Использование Obsidian API (`Vault.on('create')` или более специфичные для файловой системы API, если доступны и подходят) или стандартных механизмов Node.js (например, `fs.watch` из `original-fs` адаптера Obsidian) для отслеживания. Приоритет на API Obsidian для лучшей интеграции и кроссплатформенности.
+    *   Использование Node.js `fs.watch` для реального отслеживания файловой системы.
+    *   Проверка стабильности файлов (ожидание завершения копирования).
     *   Передача пути к новому ZIP-файлу в `ProcessingService` для обработки.
 *   **Методы:**
     *   `startWatching(folderPath)`: Начать отслеживание указанной папки.
     *   `stopWatching()`: Прекратить отслеживание.
-    *   `processNewFile(filePath)`: Внутренний метод, вызываемый при обнаружении нового файла.
+    *   `isCurrentlyWatching()`: Проверка статуса отслеживания.
+    *   `getWatchedPath()`: Получение текущего пути отслеживания.
+    *   `scanExistingFiles()`: Массовое сканирование существующих ZIP-файлов.
+    *   `waitForFileStability(filePath)`: Ожидание завершения копирования файла.
 
 ### 2.4. `ProcessingService` - Сервис обработки файлов
 *   **Ответственность:**
@@ -101,7 +105,7 @@
     *   `createNote(parsedData, settings)`: Создать и сохранить заметку.
     *   `applyTemplate(templateString, data)`: Заполнить шаблон данными.
 
-### 2.8. `NotificationService` - Сервис уведомлений
+### 2.8. `NotificationService` - Сервис уведомлений ✅ **РЕАЛИЗОВАН**
 *   **Ответственность:**
     *   Отображение уведомлений пользователю (успех, ошибка, дубликат) с использованием Obsidian API (`new Notice(...)`).
     *   Формирование текстов уведомлений.
@@ -111,6 +115,27 @@
     *   `showError(message)`.
     *   `showWarning(message)`.
     *   `showDuplicateFound(fileName, strategy, actions)`: Уведомление о дубликате с возможными действиями.
+
+### 2.10. `LoggingService` - Система логирования ✅ **РЕАЛИЗОВАН v3.2.0**
+*   **Ответственность:**
+    *   Ведение подробного журнала работы плагина для диагностики.
+    *   Поддержка уровней логирования (DEBUG, INFO, WARN, ERROR).
+    *   Категоризация событий (Processing, FileWatcher, Settings, Commands).
+    *   Экспорт логов в различных форматах.
+*   **Методы:**
+    *   `log(level, category, message, details?)`: Основной метод логирования.
+    *   `info(category, message)`, `warn(category, message)`, `error(category, message)`.
+    *   `exportLogs(format)`: Экспорт в текстовый или JSON формат.
+
+### 2.11. `StatusBarService` - Индикация статуса ✅ **РЕАЛИЗОВАН v3.2.0**
+*   **Ответственность:**
+    *   Отображение текущего статуса плагина в строке состояния Obsidian.
+    *   Анимированные иконки для различных состояний.
+    *   Цветовая индикация (зеленый/синий/красный/серый).
+    *   Интерактивность (клик для открытия настроек).
+*   **Методы:**
+    *   `setIdle(message?)`, `setWatching(path)`, `setProcessing(message)`, `setError(message)`.
+    *   `setTemporaryMessage(message, duration)`: Временные сообщения с автосбросом.
 
 ### 2.9. `SettingsUI (SettingsTab.ts)` - Пользовательский интерфейс настроек
 *   **Ответственность:**
@@ -161,13 +186,15 @@ krisp-notes-importer/
 ├── src/
 │   ├── main.ts                 # MainPlugin
 │   ├── core/
-│   │   ├── SettingsManager.ts
-│   │   ├── FileWatcherService.ts
-│   │   ├── ProcessingService.ts
-│   │   ├── ZipExtractor.ts
-│   │   ├── NoteParser.ts
-│   │   ├── NoteCreator.ts
-│   │   └── NotificationService.ts
+│   │   ├── SettingsManager.ts      # ✅ РЕАЛИЗОВАН
+│   │   ├── FileWatcherService.ts   # ✅ РЕАЛИЗОВАН v3.0.0
+│   │   ├── ProcessingService.ts    # ✅ РЕАЛИЗОВАН
+│   │   ├── ZipExtractor.ts         # ✅ РЕАЛИЗОВАН
+│   │   ├── NoteParser.ts           # ✅ РЕАЛИЗОВАН
+│   │   ├── NoteCreator.ts          # ✅ РЕАЛИЗОВАН
+│   │   ├── NotificationService.ts  # ✅ РЕАЛИЗОВАН
+│   │   ├── LoggingService.ts       # ✅ РЕАЛИЗОВАН v3.2.0
+│   │   └── StatusBarService.ts     # ✅ РЕАЛИЗОВАН v3.2.0
 │   ├── ui/
 │   │   └── SettingsTab.ts        # SettingsUI
 │   └──
