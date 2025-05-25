@@ -17,6 +17,16 @@ export class KrispSettingsTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
+    /**
+     * Displays the settings interface for the Krisp Notes Importer plugin.
+     *
+     * This function sets up the UI components for configuring various settings related to importing notes from Krisp into Obsidian.
+     * It includes sections for basic settings, saving in Obsidian, naming templates, handling duplicates, post-import actions,
+     * additional settings, content template, and version information. Each setting is linked to a corresponding configuration
+     * option, which can be updated by the user through interactive UI elements. The function also provides validation for settings.
+     *
+     * @param this - The context in which the function is called, expected to have `containerEl` and `plugin` properties.
+     */
     display(): void {
         const { containerEl } = this;
 
