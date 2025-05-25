@@ -580,7 +580,9 @@ export class KrispSettingsTab extends PluginSettingTab {
         containerEl.createEl('h2', { text: this.localization.t('settings.info.title') });
 
         const versionInfo = containerEl.createEl('div');
-        versionInfo.createEl('p', { text: `${this.localization.t('settings.info.version')}: v3.3.2` });
+        // Получаем версию из manifest.json плагина
+        const pluginVersion = (this.plugin as any).manifest?.version || 'unknown';
+        versionInfo.createEl('p', { text: `${this.localization.t('settings.info.version')}: v${pluginVersion}` });
         versionInfo.createEl('p', { text: `${this.localization.t('settings.info.status')}: ${this.localization.t('settings.info.features.0')}` });
 
         // Отображаем все функции
