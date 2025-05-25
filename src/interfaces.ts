@@ -9,7 +9,7 @@ export interface KrispImporterSettings {
     deleteZipAfterImport: boolean;
     openNoteAfterImport: boolean;
     autoScanEnabled: boolean;
-    language: string;
+    language: 'en' | 'ru';
     // Поля, необходимые для Итерации 1, согласно DevelopmentPlan.MD и SRS.MD
     // Остальные поля из SRS.MD будут добавлены в Итерации 3
 }
