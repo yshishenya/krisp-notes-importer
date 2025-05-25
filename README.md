@@ -78,7 +78,7 @@
 <details>
 <summary><b>📦 Скачать готовый архив</b></summary>
 
-1. **Скачайте** [`krisp-notes-importer.zip`](./dist/krisp-notes-importer.zip)
+1. **Скачайте** последний релиз с [GitHub Releases](https://github.com/yshishenya/krisp-notes-importer/releases/latest)
 2. **Распакуйте** в папку `.obsidian/plugins/` вашего хранилища
 3. **Перезапустите** Obsidian
 4. **Включите плагин** в настройках Community Plugins
@@ -90,7 +90,7 @@
 <details>
 <summary><b>📁 Скопировать папку плагина</b></summary>
 
-1. **Скачайте** папку [`dist/krisp-notes-importer/`](./dist/krisp-notes-importer/)
+1. **Скачайте** архив `krisp-notes-importer-X.Y.Z.zip` из [релизов](https://github.com/yshishenya/krisp-notes-importer/releases/latest)
 2. **Скопируйте** в `.obsidian/plugins/` вашего хранилища
 3. **Перезапустите** Obsidian и включите плагин
 

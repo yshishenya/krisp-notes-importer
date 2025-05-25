@@ -1,7 +1,0 @@
-{
-    "id": "krisp-notes-importer",
-    "name": "Krisp Notes Importer",
-    "author": "yshishenya",
-    "description": "Automatically import Krisp meeting notes into beautifully formatted Obsidian notes with advanced analytics and smart tags.",
-    "repo": "yshishenya/krisp-notes-importer"
-},

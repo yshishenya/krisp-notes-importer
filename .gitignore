@@ -1,29 +1,25 @@
-# vscode
-.vscode
-
-# Intellij
+# IDE
+.vscode/
+.idea/
 *.iml
-.idea
 
-# npm
-node_modules
+# Dependencies
+node_modules/
 
-# Собранные файлы в корне (теперь они в dist/)
-# main.js - нужен для релиза
-# styles.css - нужен для релиза
-
-# Exclude sourcemaps
+# Build artifacts
 *.map
 
-# obsidian
+# Obsidian data
 data.json
 
-# Exclude macOS Finder (System Explorer) View States
+# System files
 .DS_Store
+Thumbs.db
 
-# Временные файлы разработки
+# Temporary files
 *.tmp
 *.temp
-
-# Логи
 *.log
+
+# Keep main.js, manifest.json, styles.css in root for releases
+# Keep dist/ folder for distribution
