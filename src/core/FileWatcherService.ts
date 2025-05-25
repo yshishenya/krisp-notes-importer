@@ -31,7 +31,13 @@ export class FileWatcherService {
     }
 
     /**
-     * Начать отслеживание указанной папки
+     * Start watching the specified folder for changes.
+     *
+     * This function checks if there is an ongoing watch and stops it before starting a new one.
+     * It validates the folder path, ensuring it exists and is a directory. If validation fails,
+     * appropriate error messages are shown using the notification service.
+     *
+     * @param folderPath - The path of the folder to be watched.
      */
     async startWatching(folderPath: string): Promise<void> {
         if (this.isWatching) {
@@ -90,7 +96,7 @@ export class FileWatcherService {
     }
 
     /**
-     * Остановить отслеживание папки
+     * Stops watching the directory.
      */
     async stopWatching(): Promise<void> {
         if (this.watcher) {
@@ -112,21 +118,26 @@ export class FileWatcherService {
     }
 
     /**
-     * Проверить статус отслеживания
+     * Checks if the current item is being watched.
      */
     isCurrentlyWatching(): boolean {
         return this.isWatching;
     }
 
     /**
-     * Получить путь отслеживаемой папки
+     * Returns the path of the watched folder.
      */
     getWatchedPath(): string {
         return this.watchedPath;
     }
 
     /**
-     * Обработать событие файловой системы
+     * Handles a file system event, specifically for ZIP files.
+     *
+     * This function processes events related to ZIP files by checking if the file has the correct extension,
+     * exists on disk, and is not a directory. It then waits for the file to stabilize before processing it with the current settings.
+     *
+     * @param filename - The name of the file that triggered the event.
      */
     private async handleFileEvent(filename: string): Promise<void> {
         console.log(`[FileWatcher] Processing file event for: ${filename}`);
@@ -168,7 +179,12 @@ export class FileWatcherService {
     }
 
     /**
-     * Ждем пока файл стабилизируется (полностью скопируется)
+     * Waits for a file to stabilize (complete copying).
+     *
+     * This function checks the file size at regular intervals and considers the file stable if its size remains unchanged for a specified number of consecutive checks within a given maximum wait time.
+     *
+     * @param filePath - The path to the file to monitor for stability.
+     * @param maxWaitTime - The maximum time in milliseconds to wait for the file to stabilize. Defaults to 5000ms.
      */
     private async waitForFileStability(filePath: string, maxWaitTime: number = 5000): Promise<void> {
         const checkInterval = 500; // Проверяем каждые 500мс
@@ -177,6 +193,17 @@ export class FileWatcherService {
         const requiredStableChecks = 3; // Файл должен быть стабильным 3 проверки подряд
 
         return new Promise((resolve) => {
+            /**
+             * Checks the stability of a file by monitoring its size over time.
+             *
+             * This function continuously checks if the size of a specified file remains constant for a certain number of checks.
+             * If the file size does not change and is greater than zero, it increments a stability counter.
+             * Once the counter reaches the required number of stable checks, it resolves the operation.
+             * If the file size changes or the maximum wait time is exceeded, it resets the counter and continues checking.
+             * In case of an error accessing the file, it resolves the operation without further checks.
+             *
+             * @returns void
+             */
             const checkStability = () => {
                 try {
                     if (!fs.existsSync(filePath)) {
@@ -218,7 +245,7 @@ export class FileWatcherService {
     }
 
     /**
-     * Обработать новый ZIP-файл
+     * Processes a newly detected ZIP file.
      */
     private async processNewZipFile(zipFilePath: string, settings: KrispImporterSettings): Promise<void> {
         try {
@@ -237,7 +264,14 @@ export class FileWatcherService {
     }
 
     /**
-     * Сканировать папку на предмет существующих ZIP-файлов
+     * Scans the watched directory for existing ZIP files and processes them.
+     *
+     * This function first checks if the watcher is active and a valid path is set.
+     * It then reads the directory, filters out ZIP files, and processes each one using the current settings.
+     * If no ZIP files are found, it displays an informational message. Otherwise, it processes each file,
+     * logs any errors encountered during processing, and finally shows the batch import result.
+     *
+     * @returns A Promise that resolves when the scanning and processing are complete.
      */
     async scanExistingFiles(): Promise<void> {
         if (!this.isWatching || !this.watchedPath) {

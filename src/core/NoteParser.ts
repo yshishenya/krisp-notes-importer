@@ -455,8 +455,8 @@ export class NoteParser {
     }
 
     /**
-     * Извлекает сущности (проекты, компании, важные термины) из текста
-     * Оптимизированная версия с кэшированием и ограничением размера текста
+     * Extracts entities (projects, companies, important dates) from given text content.
+     * Optimized with caching and text length restriction.
      */
     private extractEntities(notesContent: string, transcriptContent: string): string[] {
         const entities: string[] = [];
