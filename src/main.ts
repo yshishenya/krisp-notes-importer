@@ -12,6 +12,15 @@ export default class KrispNotesImporterPlugin extends Plugin {
 	notificationService: NotificationService;
 	fileWatcherService: FileWatcherService;
 
+	/**
+	 * Initializes and sets up the Krisp Notes Importer plugin.
+	 *
+	 * This function performs several tasks including initializing services,
+	 * setting up event listeners, adding settings tabs, registering commands,
+	 * and starting auto-watching if enabled in settings.
+	 *
+	 * @returns Promise<void>
+	 */
 	async onload() {
 		console.log('Loading Krisp Notes Importer plugin...');
 
@@ -84,6 +93,9 @@ export default class KrispNotesImporterPlugin extends Plugin {
 		console.log('Krisp Notes Importer plugin loaded successfully.');
 	}
 
+	/**
+	 * Stops file watching and logs unloading message when the plugin is unloaded.
+	 */
 	onunload() {
 		// Останавливаем отслеживание при выгрузке плагина
 		if (this.fileWatcherService) {
