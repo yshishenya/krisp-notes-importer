@@ -3,8 +3,7 @@
     "name": "Krisp Notes Importer",
     	"version": "3.3.9",
     "minAppVersion": "0.15.0",
-    "description": "Import Krisp meeting notes into Obsidian. Automatically processes ZIP archives, creates structured Markdown notes with analytics, smart tags, and beautiful callout formatting.",
+    "description": "Import Krisp meeting notes automatically. Processes ZIP archives, creates structured Markdown notes with analytics, smart tags, and beautiful callout formatting.",
     "author": "KrispImporter Team",
-    "authorUrl": "https://github.com/yshishenya/krisp-notes-importer",
     "isDesktopOnly": false
 }
