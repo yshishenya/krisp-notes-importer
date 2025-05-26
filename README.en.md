@@ -246,6 +246,38 @@ Full customization of note structure with variables for all meeting data.
 3. Verify watched folder path
 4. Check plugin logs
 
+## 🤖 Future: LLM Integration (v4.0.0+)
+
+We're planning revolutionary **LLM-powered features** for intelligent meeting management:
+
+### 🎯 Smart Meeting Linking
+- **Semantic Analysis** - Automatically find related meetings by content
+- **Project Grouping** - Organize meetings by projects and topics
+- **Timeline Building** - Create project timelines from meeting history
+- **Context Recommendations** - Suggest relevant past discussions
+
+### 📊 Intelligent Analytics
+- **Automatic Tagging** - Smart tags based on content analysis
+- **Participant Insights** - Role analysis and contribution tracking
+- **Decision Tracking** - Monitor implementation of meeting decisions
+- **Productivity Metrics** - Meeting effectiveness analysis
+
+### 🔒 Privacy-First Approach
+- **Local Processing** - Use local LLM models (Ollama, LM Studio)
+- **Data Privacy** - No data leaves your device
+- **Optional Cloud** - Encrypted cloud processing available
+- **GDPR Compliant** - Full user control over data
+
+### 💡 Practical Benefits
+- **Save 2+ hours/week** on meeting preparation and follow-up
+- **Never lose context** - Automatic project knowledge management
+- **Better decisions** - Full historical context at your fingertips
+- **Team insights** - Understand team dynamics and productivity
+
+**Detailed plan available in:** `docs/LLM_INTEGRATION_PLAN.md`
+
+---
+
 ### Getting Help
 1. Check [User Guide](docs/UserGuide.MD)
 2. Review [CHANGELOG.md](CHANGELOG.md)

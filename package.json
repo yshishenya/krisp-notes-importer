@@ -10,7 +10,7 @@
 		"clean": "rm -f main.js styles.css *.map"
 	},
 	"keywords": ["obsidian", "plugin", "krisp", "import"],
-	"author": "Ваше Имя (или ник)",
+	"author": "yshishenya",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^16.11.6",
