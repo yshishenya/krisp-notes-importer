@@ -24,10 +24,10 @@ export class ZipExtractor {
             const uniqueTempDir = path.join(tempDirPathOs, 'krisp-importer-temp', tempDirName + '_' + Date.now());
 
             // Создаем родительскую папку если не существует
-            const parentTempDir = path.join(tempDirPathOs, 'krisp-importer-temp');
-            if (!existsSync(parentTempDir)) {
-                mkdirSync(parentTempDir, { recursive: true });
-            }
+                const parentTempDir = path.join(tempDirPathOs, 'krisp-importer-temp');
+                if (!existsSync(parentTempDir)) {
+                    mkdirSync(parentTempDir, { recursive: true });
+                }
 
             // Создаем временную папку для этого архива
             if (!existsSync(uniqueTempDir)) {
@@ -47,19 +47,19 @@ export class ZipExtractor {
                         const filePath = normalizePath(path.join(uniqueTempDir, entryName));
 
                         // Создаем директорию для файла если не существует
-                        const dirName = path.dirname(filePath);
-                        if (!existsSync(dirName)) {
-                            mkdirSync(dirName, { recursive: true });
-                        }
+                    const dirName = path.dirname(filePath);
+                    if (!existsSync(dirName)) {
+                        mkdirSync(dirName, { recursive: true });
+                    }
 
                         // Извлекаем файл
                         const fileData = await zip.entryData(entryName);
-                        await fsPromises.writeFile(filePath, fileData);
-                    }
+                    await fsPromises.writeFile(filePath, fileData);
                 }
+            }
 
-                console.log(`Successfully extracted to ${uniqueTempDir}`);
-                return uniqueTempDir;
+            console.log(`Successfully extracted to ${uniqueTempDir}`);
+            return uniqueTempDir;
 
             } finally {
                 // Обязательно закрываем ZIP-архив

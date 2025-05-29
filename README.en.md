@@ -384,3 +384,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 [🇷🇺 Русская версия](README.md) • [📖 Documentation](docs/) • [🚀 Releases](https://github.com/your-repo/releases)
 
 </div>
+
+**Latest Version:** [v3.3.12](https://github.com/your-username/krisp-notes-importer/releases/tag/v3.3.12) (2025-05-30)
