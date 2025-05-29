@@ -18,7 +18,7 @@
 		"transcript",
 		"русский"
 	],
-	"author": "Yury Shishenya",
+	"author": "Yan Shishenya",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^16.11.6",
