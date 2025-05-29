@@ -110,7 +110,7 @@
 ```yaml
 ---
 title: Обсуждение проекта
-date: 2025-01-22
+date: 2025-03-15
 time: 14:30
 type: meeting
 source: krisp
@@ -118,7 +118,7 @@ tags:
   - project
   - planning
   - technical
-audio: "KrispNotes/Attachments/2025/01/audio.mp3"
+audio: "KrispNotes/Attachments/2025/03/audio.mp3"
 participants: [Denis, Yan, Alexey]
 duration: 15:24
 meeting_stats:
@@ -208,8 +208,8 @@ meeting_stats:
 
 **Доступные переменные**:
 - `{{YYYY}}` - год (2025)
-- `{{MM}}` - месяц (01)
-- `{{DD}}` - день (22)
+- `{{MM}}` - месяц (03)
+- `{{DD}}` - день (15)
 - `{{HHMM}}` - время (1430)
 - `{{meetingTitle}}` - название встречи
 

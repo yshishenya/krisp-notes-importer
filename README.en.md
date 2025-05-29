@@ -3,9 +3,10 @@
 <div align="center">
 
 ![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)
-![Version](https://img.shields.io/badge/Version-3.3.0-blue?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Version](https://img.shields.io/badge/Version-3.3.12-2563EB?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)
+![TypeScript](https://img.shields.io/badge/TypeScript-100%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-22C55E?style=for-the-badge)
 
 **Automatically import Krisp meeting notes into beautifully formatted Obsidian notes**
 
@@ -116,29 +117,38 @@ Each imported meeting creates a comprehensive note with:
 # 🎙️ Project Discussion
 
 > [!info]+ 📋 Meeting Information
-> **📅 Date:** 2025-01-22
+> **📅 Date:** 2025-03-15
 > **⏰ Time:** 14:30
-> **⏱️ Duration:** 15:24
+> **⏱️ Duration:** 45 min
 > **👥 Participants:** 3 people
 
 ## 🎧 Audio Recording
-![[2025-01-22_Project-Discussion_audio.mp3]]
+![[2025-03-15_Project-Discussion_audio.mp3]]
 
 ## 📝 Summary
 > [!note]+ 💡 Key Points
-> Main discussion topics and decisions...
+> ## 1. Current Status Review
+> - Analysis of project progress
+> - Identification of bottlenecks
+> - Assessment of timeline feasibility
+>
+> ## 2. Next Steps Planning
+> - Resource allocation strategy
+> - Risk mitigation approaches
+> - Milestone definitions
 
 ## ✅ Action Items
 > [!todo]+ 📋 Tasks
-> - [ ] Complete project proposal by Friday
+> - [ ] Create project timeline
+> - [ ] Prepare resource allocation plan
 > - [ ] Schedule follow-up meeting
 
 ## 📊 Participant Statistics
 | Speaker | Words | Activity % | Contributions |
 |---------|-------|------------|---------------|
-| Alice   | 1,234 | 45%        | 12           |
-| Bob     | 987   | 35%        | 8            |
-| Carol   | 543   | 20%        | 5            |
+| Alex    | 1,234 | 45%        | 12           |
+| Maria   | 987   | 35%        | 8            |
+| John    | 543   | 20%        | 5            |
 ```
 
 ### YAML Frontmatter
@@ -148,16 +158,16 @@ Rich metadata for powerful queries:
 ```yaml
 ---
 title: Project Discussion
-date: 2025-01-22
+date: 2025-03-15
 time: 14:30
 type: meeting
 source: krisp
 tags: [project, planning, technical]
-participants: [Alice, Bob, Carol]
-duration: 15:24
+participants: [Alex, Maria, John]
+duration: 45 min
 meeting_stats:
   participants_count: 3
-  most_active_speaker: "Alice"
+  most_active_speaker: "Alex"
 ---
 ```
 
@@ -184,8 +194,8 @@ meeting_stats:
 
 **Available Variables:**
 - `{{YYYY}}` - Year (2025)
-- `{{MM}}` - Month (01)
-- `{{DD}}` - Day (22)
+- `{{MM}}` - Month (03)
+- `{{DD}}` - Day (15)
 - `{{HHMM}}` - Time (1430)
 - `{{meetingTitle}}` - Meeting name
 
@@ -288,7 +298,7 @@ We're planning revolutionary **LLM-powered features** for intelligent meeting ma
 
 ## 📊 Project Status
 
-### 🎯 Current Version: **v3.3.0** - 99% Complete
+### 🎯 Current Version: **v3.3.12** - 99% Complete
 
 ### ✅ Fully Implemented:
 - ✅ Manual ZIP import with command palette

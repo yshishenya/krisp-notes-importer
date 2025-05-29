@@ -21,7 +21,7 @@ export class NoteCreator {
 
         const outputLines: string[] = [];
         let sectionCounter = 0;
-        let inListItemContinuation = false;
+        let currentSectionHasBullets = false;
 
         for (let i = 0; i < summaryLines.length; i++) {
             const line = summaryLines[i];
@@ -30,7 +30,6 @@ export class NoteCreator {
             // Пропустить пустые строки
             if (strippedLine === '') {
                 outputLines.push('');
-                inListItemContinuation = false;
                 continue;
             }
 
@@ -43,26 +42,29 @@ export class NoteCreator {
             const isListMarker = /^[-*•]\s+/.test(strippedLine);
 
             if (isListMarker) {
-                // Это новый элемент списка
+                // Это элемент списка - преобразуем в буллет
                 const listText = strippedLine.replace(/^[-*•]\s+/, '');
                 outputLines.push(`- ${listText}`);
-                inListItemContinuation = true;
+                currentSectionHasBullets = true;
             } else {
-                if (inListItemContinuation) {
-                    // Это продолжение предыдущего элемента списка
-                    outputLines.push(`  ${strippedLine}`);
-                } else {
+                // Проверяем: это продолжение предыдущего пункта или новая тема?
+                const looksLikeHeader = this.isLikelyHeader(strippedLine, i, summaryLines);
+
+                if (looksLikeHeader) {
                     // Это новый заголовок секции
-                    inListItemContinuation = false;
                     sectionCounter++;
+                    currentSectionHasBullets = false;
 
                     // Добавляем пустую строку перед новым заголовком (если это не первый)
                     if (sectionCounter > 1) {
                         outputLines.push('');
                     }
 
-                    outputLines.push(`### ${sectionCounter}. ${strippedLine}`);
-                    outputLines.push(''); // Пустая строка после заголовка
+                    outputLines.push(`## ${sectionCounter}. ${strippedLine}`);
+                } else {
+                    // Это предложение - делаем буллетом
+                    outputLines.push(`- ${strippedLine}`);
+                    currentSectionHasBullets = true;
                 }
             }
         }
@@ -74,6 +76,34 @@ export class NoteCreator {
             }
             return `> ${line}`;
         }).join('\n');
+    }
+
+    // Помогает определить является ли строка заголовком секции
+    private isLikelyHeader(line: string, currentIndex: number, allLines: string[]): boolean {
+        // Если это очень длинная строка (>100 символов), вероятно это не заголовок
+        if (line.length > 100) {
+            return false;
+        }
+
+        // Если в строке есть точка в конце, это скорее предложение
+        if (line.endsWith('.') || line.endsWith('!') || line.endsWith('?')) {
+            return false;
+        }
+
+        // Если следующая строка начинается с дефиса, то текущая - заголовок
+        if (currentIndex + 1 < allLines.length) {
+            const nextLine = allLines[currentIndex + 1].trim();
+            if (/^[-*•]\s+/.test(nextLine)) {
+                return true;
+            }
+        }
+
+        // Если строка короткая и не содержит точки/запятые в середине, вероятно заголовок
+        if (line.length < 80 && !line.includes(',') && !line.includes('.')) {
+            return true;
+        }
+
+        return false;
     }
 
     // Заполняет шаблон заметки данными

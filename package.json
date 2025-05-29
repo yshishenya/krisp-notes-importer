@@ -1,6 +1,6 @@
 {
 	"name": "krisp-notes-importer",
-	"version": "3.3.11",
+	"version": "3.3.12",
 	"description": "Плагин Obsidian для автоматического импорта заметок из архивов Krisp",
 	"main": "main.js",
 	"scripts": {

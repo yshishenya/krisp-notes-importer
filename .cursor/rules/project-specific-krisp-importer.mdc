@@ -1,0 +1,104 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Специфичные правила для Krisp Notes Importer
+
+## 1. Обзор архитектуры
+
+Этот документ описывает высокоуровневую архитектуру плагина "Krisp Notes Importer" для Obsidian.
+
+### Ключевые компоненты и файлы:
+
+*   **Основной файл плагина**: `[main.js](mdc:main.js)` (или `[src/main.ts](mdc:src/main.ts)`) является точкой входа, отвечает за инициализацию, загрузку/выгрузку плагина, регистрацию команд и настроек.
+*   **Управление настройками**:
+    *   `[src/core/SettingsManager.ts](mdc:src/core/SettingsManager.ts)`: Отвечает за хранение, загрузку, сохранение и валидацию настроек плагина.
+    *   `[src/ui/SettingsTab.ts](mdc:src/ui/SettingsTab.ts)`: Реализует пользовательский интерфейс для вкладки настроек плагина в Obsidian.
+*   **Основная логика импорта**:
+    *   `[src/core/ProcessingService.ts](mdc:src/core/ProcessingService.ts)`: Координирует полный цикл обработки ZIP-файла, включая распаковку, парсинг, создание заметки и перемещение файлов.
+    *   `[src/core/ZipExtractor.ts](mdc:src/core/ZipExtractor.ts)`: Отвечает за распаковку ZIP-архивов.
+    *   `[src/core/NoteParser.ts](mdc:src/core/NoteParser.ts)`: Извлекает структурированные данные из текстовых файлов внутри ZIP-архива.
+    *   `[src/core/NoteCreator.ts](mdc:src/core/NoteCreator.ts)`: Формирует и сохраняет Markdown-заметки в Obsidian.
+*   **Отслеживание файлов**:
+    *   `[src/core/FileWatcherService.ts](mdc:src/core/FileWatcherService.ts)`: Мониторит указанную папку на предмет появления новых ZIP-файлов.
+*   **Уведомления**:
+    *   `[src/core/NotificationService.ts](mdc:src/core/NotificationService.ts)`: Отображает уведомления пользователю о статусе операций.
+*   **Локализация**:
+    *   `[src/core/LocalizationService.ts](mdc:src/core/LocalizationService.ts)`: Управляет локализацией строк интерфейса.
+*   **Логирование**:
+    *   `[src/core/LoggingService.ts](mdc:src/core/LoggingService.ts)`: Отвечает за логирование событий плагина.
+*   **Статус в строке состояния**:
+    *   `[src/core/StatusBarService.ts](mdc:src/core/StatusBarService.ts)`: Управляет отображением статуса в строке состояния Obsidian.
+*   **Общие интерфейсы**:
+    *   `[src/interfaces.ts](mdc:src/interfaces.ts)`: Содержит определения общих TypeScript интерфейсов, используемых в плагине (например, для настроек).
+
+Более подробную информацию об архитектуре можно найти в документе `[docs/Architecture.MD](mdc:docs/Architecture.MD)`.
+Структура директорий исходного кода следует предложенной в `[docs/Architecture.MD#6-Каталог-с-исходным-кодом-финальная-структура-v339](mdc:docs/Architecture.MD)`.
+
+## 2. Архитектура кода
+
+### Соответствие архитектуре
+Код должен строго следовать структуре из `[docs/Architecture.MD](mdc:docs/Architecture.MD)`:
+
+```
+src/
+├── main.ts                 # MainPlugin
+├── core/
+│   ├── SettingsManager.ts  # ✅ РЕАЛИЗОВАН
+│   ├── ProcessingService.ts # ✅ РЕАЛИЗОВАН
+│   ├── ZipExtractor.ts     # ✅ РЕАЛИЗОВАН
+│   ├── NoteParser.ts       # ✅ РЕАЛИЗОВАН
+│   ├── NoteCreator.ts      # ✅ РЕАЛИЗОВАН
+│   ├── NotificationService.ts # ✅ РЕАЛИЗОВАН
+│   ├── FileWatcherService.ts  # ✅ РЕАЛИЗОВАН
+│   ├── LoggingService.ts     # ✅ РЕАЛИЗОВАН
+│   ├── LocalizationService.ts # ✅ РЕАЛИЗОВАН
+│   └── StatusBarService.ts   # ✅ РЕАЛИЗОВАН
+├── ui/
+│   └── SettingsTab.ts      # ✅ РЕАЛИЗОВАН
+└── interfaces.ts           # ✅ РЕАЛИЗОВАН
+```
+
+### Принципы разработки
+- **Модульность**: Каждый сервис имеет четко определенную ответственность.
+- **Типизация**: Использование интерфейсов из `[src/interfaces.ts](mdc:src/interfaces.ts)`. Строгая типизация.
+- **Обработка ошибок**: Логирование через `[src/core/NotificationService.ts](mdc:src/core/NotificationService.ts)` и `[src/core/LoggingService.ts](mdc:src/core/LoggingService.ts)`.
+
+### Требования к новому коду
+1.  Следовать архитектуре из `[docs/Architecture.MD](mdc:docs/Architecture.MD)`.
+2.  Обновлять `[src/interfaces.ts](mdc:src/interfaces.ts)` при изменении типов.
+3.  Добавлять JSDoc для публичных методов.
+
+### Антипаттерны (Запрещено)
+- ❌ Прямое обращение к файловой системе минуя Obsidian API (кроме `FileWatcherService` для отслеживаемой папки).
+- ❌ Хранение состояния в глобальных переменных.
+- ❌ Игнорирование ошибок без логирования.
+
+### Стиль кода
+- **Классы**: PascalCase (`SettingsManager`)
+- **Методы**: camelCase (`processZipFile`)
+- **Константы**: UPPER_SNAKE_CASE (`DEFAULT_SETTINGS`)
+- **Файлы**: PascalCase (`SettingsManager.ts`)
+
+## 3. Основная логика обработки
+
+Процесс импорта ZIP-архивов Krisp включает следующие ключевые сервисы:
+
+1.  **`[src/core/ProcessingService.ts](mdc:src/core/ProcessingService.ts)`**: Координатор полного цикла обработки одного ZIP-файла. Взаимодействует с другими сервисами.
+2.  **`[src/core/ZipExtractor.ts](mdc:src/core/ZipExtractor.ts)`**: Распаковка ZIP-архива.
+3.  **`[src/core/NoteParser.ts](mdc:src/core/NoteParser.ts)`**: Извлечение структурированных данных из `meeting_notes.txt` и `transcript.txt`.
+4.  **`[src/core/NoteCreator.ts](mdc:src/core/NoteCreator.ts)`**: Формирование и сохранение Markdown-заметок в Obsidian, используя данные из `NoteParser` и шаблоны из `SettingsManager`.
+
+Поток данных подробно описан в `[docs/Architecture.MD#3-Потоки-данных-и-взаимодействие](mdc:docs/Architecture.MD)`.
+Требования к данным: `[docs/SRS.MD#324-Извлечение-данных-FUNC-EXTRACT](mdc:docs/SRS.MD)` и `[docs/SRS.MD#325-Создание-заметки-FUNC-CREATE-NOTE](mdc:docs/SRS.MD)`.
+
+## 4. Управление настройками
+
+Осуществляется через:
+
+1.  **`[src/core/SettingsManager.ts](mdc:src/core/SettingsManager.ts)`**: Хранение, загрузка, сохранение, валидация и предоставление доступа к настройкам (`KrispImporterSettings` из `[src/interfaces.ts](mdc:src/interfaces.ts)`).
+2.  **`[src/ui/SettingsTab.ts](mdc:src/ui/SettingsTab.ts)`**: Пользовательский интерфейс для всех настроек плагина, взаимодействие с `SettingsManager`.
+
+Детальное описание настроек: `[docs/SRS.MD#311-Пользовательский-интерфейс-UI](mdc:docs/SRS.MD)`.
+Структура настроек: `[docs/Architecture.MD#22-SettingsManager---Менеджер-настроек](mdc:docs/Architecture.MD)`.

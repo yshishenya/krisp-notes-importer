@@ -3,9 +3,10 @@
 <div align="center">
 
 ![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)
-![Version](https://img.shields.io/badge/Version-3.3.9-blue?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Version](https://img.shields.io/badge/Version-3.3.12-2563EB?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)
+![TypeScript](https://img.shields.io/badge/TypeScript-100%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-22C55E?style=for-the-badge)
 
 **Автоматический импорт заметок встреч из Krisp в Obsidian**
 
@@ -168,11 +169,11 @@ npm run build
 # 🎙️ Обсуждение архитектуры проекта
 
 > [!info]+ 📋 Информация о встрече
-> **Дата:** 2025-01-22 | **Время:** 14:30 | **Участники:** 3
+> **Дата:** 2025-03-15 | **Время:** 14:30 | **Участники:** 3
 > **Длительность:** 45:23 | **Самый активный:** Denis (45%)
 
 ## 🎧 Аудиозапись
-![[2025-01-22_Обсуждение архитектуры_audio.mp3]]
+![[2025-03-15_Обсуждение архитектуры_audio.mp3]]
 
 ## 📝 Краткое содержание
 > [!note]+ 💡 Основные моменты
@@ -245,7 +246,7 @@ npm run build
 
 </div>
 
-### ✅ Реализовано (v3.3.9)
+### ✅ Реализовано (v3.3.12)
 
 - [x] Ручной и автоматический импорт
 - [x] Создание красиво оформленных заметок
