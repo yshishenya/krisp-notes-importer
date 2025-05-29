@@ -158,12 +158,30 @@ export class FileWatcherService {
             // Получаем актуальные настройки из плагина
             const currentSettings = this.settingsProvider();
 
+            // Устанавливаем статус Processing перед вызовом processNewZipFile
+            if (this.statusBarService) {
+                this.statusBarService.setProcessing(path.basename(fullPath));
+            }
+
             // Обрабатываем файл
             await this.processNewZipFile(fullPath, currentSettings);
 
         } catch (error) {
-            console.error('[Krisp Importer] Error handling file event:', error);
+            console.error(`[Krisp Importer] Error handling file event for ${filename}:`, error);
             this.notificationService.showError(`Ошибка обработки файла ${filename}: ${error.message}`);
+            if (this.statusBarService) {
+                this.statusBarService.setError(`Ошибка с файлом ${filename}`);
+            }
+        } finally {
+            // Восстанавливаем статус после обработки файла
+            if (this.statusBarService) {
+                if (this.isWatching && this.watchedPath) {
+                    this.statusBarService.setWatching(this.watchedPath);
+                } else {
+                    // Если отслеживание было остановлено или путь не определен
+                    this.statusBarService.setIdle("Обработка файла завершена");
+                }
+            }
         }
     }
 
@@ -241,7 +259,20 @@ export class FileWatcherService {
      */
     async scanExistingFiles(): Promise<void> {
         if (!this.isWatching || !this.watchedPath) {
+            // Если сканирование вызвано, когда отслеживание неактивно (например, через команду, а папка не указана)
+            // Уведомляем пользователя и выходим
+            this.notificationService.showError("Отслеживаемая папка не настроена или отслеживание неактивно. Невозможно сканировать.");
+            if (this.statusBarService) {
+                this.statusBarService.setIdle("Сканирование невозможно");
+            }
             return;
+        }
+
+        const initialStatusWasWatching = this.isWatching;
+        const initialWatchedPath = this.watchedPath;
+
+        if (this.statusBarService) {
+            this.statusBarService.setProcessing("Сканирование существующих файлов...");
         }
 
         try {
@@ -278,6 +309,18 @@ export class FileWatcherService {
         } catch (error) {
             console.error('[Krisp Importer] Error scanning existing files:', error);
             this.notificationService.showError(`Ошибка сканирования папки: ${error.message}`);
+            if (this.statusBarService) {
+                this.statusBarService.setError("Ошибка сканирования");
+            }
+        } finally {
+            if (this.statusBarService) {
+                if (initialStatusWasWatching && initialWatchedPath) {
+                    // Возвращаем статус к отслеживанию, если он был таким до сканирования
+                    this.statusBarService.setWatching(initialWatchedPath);
+                } else {
+                    this.statusBarService.setIdle("Сканирование завершено");
+                }
+            }
         }
     }
 }

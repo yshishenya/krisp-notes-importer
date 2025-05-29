@@ -203,19 +203,24 @@ export class ProcessingService {
             // TODO: Уточнить поведение для множественного импорта.
 
         } catch (error) {
-            if (initialNotice) initialNotice.hide();
+            if (initialNotice) initialNotice.hide(); // Просто скрываем, если существует
 
-            // Обновляем статус при ошибке
+            // Обновляем статус при ошибке, если statusBarService доступен
             if (this.statusBarService) {
-                this.statusBarService.setError(`Ошибка: ${error.message}`);
+                this.statusBarService.setError(`Ошибка обработки ${zipFileName}`);
             }
 
-            console.error('Error processing ZIP file:', error);
+            console.error(`[Krisp Importer] Error processing ZIP file ${zipFileName}:`, error);
             this.notificationService.showError(`An unexpected error occurred while processing ${zipFileName}: ${error.message}`);
         } finally {
+            if (initialNotice) { // Дополнительно проверяем и скрываем в finally, если еще не скрыто
+                initialNotice.hide();
+            }
             if (tempDirPath) {
                 await this.zipExtractor.cleanup(tempDirPath);
             }
+            // Удаляем логику восстановления статуса из ProcessingService.
+            // Вызывающий код (FileWatcherService, main.ts) теперь отвечает за это.
         }
     }
 }

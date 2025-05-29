@@ -11,6 +11,11 @@ export interface LocalizedStrings {
             duplicates: string;
             postImport: string;
             advanced: string;
+            coreAutomation: string;
+            namingAndTemplates: string;
+            importBehavior: string;
+            manualOperations: string;
+            aboutPlugin: string;
         };
         fields: {
             watchedFolder: {
@@ -76,6 +81,20 @@ export interface LocalizedStrings {
             status: string;
             features: string[];
             commands: string[];
+            errors: {
+                watchedFolderMissing: string;
+                watchedFolderEmptyAutoscan: string;
+            };
+        };
+        status: {
+            title: string;
+            watchingActive: string;
+            watchingInactive: string;
+            watchingWarningFolderMissing: string;
+            watchingStarting: string;
+            inactiveDetailEnableAutoScan: string;
+            inactiveDetailSetPath: string;
+            serviceUnavailable: string;
         };
     };
 
@@ -87,6 +106,7 @@ export interface LocalizedStrings {
         scanExisting: string;
         checkStatus: string;
         debugSettings: string;
+        scanExistingDesc: string;
     };
 
     // Notifications
@@ -103,6 +123,9 @@ export interface LocalizedStrings {
             createNote: string;
             copyAudio: string;
             watchingFailed: string;
+            noFileSelected: string;
+            importFailedGeneral: string;
+            massImportFailed: string;
         };
         warning: {
             duplicateSkipped: string;
@@ -112,6 +135,7 @@ export interface LocalizedStrings {
         info: {
             processing: string;
             scanningFolder: string;
+            scanningFolderComplete: string;
         };
     };
 
@@ -129,6 +153,8 @@ export interface LocalizedStrings {
             title: string;
             placeholder: string;
             button: string;
+            description: string;
+            importing: string;
         };
         confirmReset: {
             title: string;
@@ -141,7 +167,24 @@ export interface LocalizedStrings {
             export: string;
             clear: string;
             close: string;
+            description: string;
+            noLogs: string;
+            copy: string;
+            copiedNotice: string;
+            clearedNotice: string;
         };
+    };
+
+    // New section for settings.info tooltips and links, can be nested under settings.info if preferred
+    settingsInfoTooltips: {
+        githubRepoTooltip: string;
+        reportIssueTooltip: string;
+        developer: string;
+        supportDevelopment: string;
+        donateLinkText: string;
+        pluginDescription: string;
+        resetSettingsDesc: string;
+        supportDevelopmentPlaceholder: string;
     };
 }
 
@@ -154,7 +197,12 @@ const EN_STRINGS: LocalizedStrings = {
             templates: "📝 Templates & Naming",
             duplicates: "🔄 Duplicate Handling",
             postImport: "⚡ Post-Import Actions",
-            advanced: "🛠️ Advanced & Maintenance"
+            advanced: "🛠️ Advanced & Maintenance",
+            coreAutomation: "📂 Core: Watching & Automation",
+            namingAndTemplates: "🎨 Appearance & Naming",
+            importBehavior: "⚙️ Import Behavior",
+            manualOperations: "🛠️ Manual Operations & Diagnostics",
+            aboutPlugin: "ℹ️ About Plugin"
         },
         fields: {
             watchedFolder: {
@@ -234,39 +282,58 @@ const EN_STRINGS: LocalizedStrings = {
                 "Scan existing files",
                 "Check watching status",
                 "Debug current settings"
-            ]
+            ],
+            errors: {
+                watchedFolderMissing: "Watched folder path is not specified. Auto-watching cannot start.",
+                watchedFolderEmptyAutoscan: "Watched folder path is empty. Auto-watching stopped if it was active for a previous path."
+            }
+        },
+        status: {
+            title: "📊 Current Status",
+            watchingActive: "Auto-watching is ACTIVE for folder: {{path}}",
+            watchingInactive: "Auto-watching is INACTIVE.",
+            watchingWarningFolderMissing: "Auto-watching is ON, but no folder specified. Please set the 'Watched Folder Path'.",
+            watchingStarting: "Auto-watching is starting...",
+            inactiveDetailEnableAutoScan: "Hint: Enable 'Enable Auto-Watching' option.",
+            inactiveDetailSetPath: "Hint: Set the 'Watched Folder Path'.",
+            serviceUnavailable: "File Watcher Service is not available. Please check plugin logs or restart Obsidian."
         }
     },
     commands: {
         importZip: "Import ZIP file manually",
         startWatching: "Start auto-watching folder",
         stopWatching: "Stop auto-watching",
-        scanExisting: "Scan existing files in folder",
+        scanExisting: "Process All Existing Files",
         checkStatus: "Check watching status",
-        debugSettings: "Debug current settings"
+        debugSettings: "Debug current settings",
+        scanExistingDesc: "Scan the watched folder and import all existing ZIP files that haven't been processed yet."
     },
     notifications: {
         success: {
-            imported: "Meeting '{{title}}' imported successfully!",
-            watchingStarted: "Auto-watching started for: {{path}}",
-            watchingStopped: "Auto-watching stopped",
-            settingsReset: "Settings reset to defaults"
+            imported: "Successfully imported: {{fileName}}",
+            watchingStarted: "Started watching folder: {{folderPath}}",
+            watchingStopped: "Stopped watching folder.",
+            settingsReset: "Settings have been reset to default."
         },
         error: {
-            invalidZip: "Invalid ZIP file: {{file}}",
-            missingFiles: "Required files not found in: {{file}}",
-            createNote: "Failed to create note for: {{title}}",
-            copyAudio: "Failed to copy audio file for: {{title}}",
-            watchingFailed: "Failed to start watching: {{error}}"
+            invalidZip: "Invalid ZIP file: {{fileName}}",
+            missingFiles: "Missing required files in ZIP: {{fileName}}",
+            createNote: "Error creating note for: {{fileName}} - {{error}}",
+            copyAudio: "Error copying audio for: {{fileName}} - {{error}}",
+            watchingFailed: "Failed to start watching: {{error}}",
+            noFileSelected: "No file selected.",
+            importFailedGeneral: "Import failed: {{error}}",
+            massImportFailed: "Mass import failed. Check logs for details."
         },
         warning: {
-            duplicateSkipped: "Meeting '{{title}}' already exists - skipped",
-            duplicateRenamed: "Meeting '{{title}}' already exists - created as '{{newTitle}}'",
-            duplicateOverwritten: "Meeting '{{title}}' already exists - overwritten"
+            duplicateSkipped: "Skipped duplicate: {{fileName}}",
+            duplicateRenamed: "Renamed duplicate: {{newName}} from {{originalName}}",
+            duplicateOverwritten: "Overwritten duplicate: {{fileName}}"
         },
         info: {
-            processing: "Processing: {{file}}",
-            scanningFolder: "Scanning folder for ZIP files..."
+            processing: "Processing: {{fileName}}...",
+            scanningFolder: "Scanning folder: {{folderPath}}...",
+            scanningFolderComplete: "Folder scan and import complete!"
         }
     },
     statusBar: {
@@ -277,22 +344,39 @@ const EN_STRINGS: LocalizedStrings = {
     },
     modals: {
         testImport: {
-            title: "Test Import ZIP File",
-            placeholder: "Enter full path to ZIP file...",
-            button: "Test Import"
+            title: "Test Manual Import",
+            placeholder: "Select Krisp ZIP file...",
+            button: "Import Selected File",
+            description: "Manually select a ZIP file to test the import process.",
+            importing: "Importing..."
         },
         confirmReset: {
-            title: "Reset Settings",
-            message: "Are you sure you want to reset all settings to defaults? This action cannot be undone.",
-            confirm: "Reset",
+            title: "Confirm Reset",
+            message: "Are you sure you want to reset all settings to their default values? This action cannot be undone.",
+            confirm: "Reset Settings",
             cancel: "Cancel"
         },
         logs: {
             title: "Plugin Logs",
-            export: "Export",
-            clear: "Clear",
-            close: "Close"
+            export: "Export Logs",
+            clear: "Clear Logs",
+            close: "Close",
+            description: "View recent activity logs for troubleshooting.",
+            noLogs: "No logs yet.",
+            copy: "Copy Logs",
+            copiedNotice: "Logs copied to clipboard!",
+            clearedNotice: "Logs cleared!"
         }
+    },
+    settingsInfoTooltips: {
+        githubRepoTooltip: "Visit GitHub Repository",
+        reportIssueTooltip: "Report an Issue",
+        developer: "Developed by: {{author}}",
+        supportDevelopment: "If you find this plugin useful, consider supporting its development: ",
+        donateLinkText: "Buy Me a Coffee",
+        pluginDescription: "Description: {{description}}",
+        resetSettingsDesc: "Reset all plugin settings to their default values.",
+        supportDevelopmentPlaceholder: "Support information for this plugin is not specified by the author."
     }
 };
 
@@ -305,7 +389,12 @@ const RU_STRINGS: LocalizedStrings = {
             templates: "📝 Шаблоны и именование",
             duplicates: "🔄 Обработка дубликатов",
             postImport: "⚡ Действия после импорта",
-            advanced: "🛠️ Дополнительно и обслуживание"
+            advanced: "🛠️ Расширенные и Обслуживание",
+            coreAutomation: "📂 Ядро: Отслеживание и Автоматизация",
+            namingAndTemplates: "🎨 Внешний вид и Именование",
+            importBehavior: "⚙️ Поведение импорта",
+            manualOperations: "🛠️ Ручные операции и Диагностика",
+            aboutPlugin: "ℹ️ О плагине"
         },
         fields: {
             watchedFolder: {
@@ -379,45 +468,64 @@ const RU_STRINGS: LocalizedStrings = {
                 "✅ Двуязычная поддержка (English/Русский)"
             ],
             commands: [
-                "Ручной импорт ZIP-файла",
-                "Запуск автоматического отслеживания папки",
-                "Остановка автоматического отслеживания",
-                "Сканирование существующих файлов",
-                "Проверка статуса отслеживания",
-                "Отладка текущих настроек"
-            ]
+                "Импортировать ZIP-файл вручную",
+                "Запустить автоматическое отслеживание папки",
+                "Остановить автоматическое отслеживание",
+                "Сканировать существующие файлы",
+                "Проверить статус отслеживания",
+                "Отладить текущие настройки"
+            ],
+            errors: {
+                watchedFolderMissing: "Путь к отслеживаемой папке не указан. Автоматическое отслеживание не может быть запущено.",
+                watchedFolderEmptyAutoscan: "Путь к отслеживаемой папке пуст. Автоматическое отслеживание остановлено, если было активно для предыдущего пути."
+            }
+        },
+        status: {
+            title: "📊 Текущий статус",
+            watchingActive: "Автоотслеживание АКТИВНО для папки: {{path}}",
+            watchingInactive: "Автоотслеживание НЕАКТИВНО.",
+            watchingWarningFolderMissing: "Автоотслеживание ВКЛЮЧЕНО, но папка не указана. Укажите 'Отслеживаемая папка'.",
+            watchingStarting: "Запуск автоотслеживания...",
+            inactiveDetailEnableAutoScan: "Подсказка: Включите опцию 'Включить автоматическое отслеживание'.",
+            inactiveDetailSetPath: "Подсказка: Укажите 'Отслеживаемая папка'.",
+            serviceUnavailable: "Сервис отслеживания файлов недоступен. Проверьте логи плагина или перезапустите Obsidian."
         }
     },
     commands: {
-        importZip: "Ручной импорт ZIP-файла",
-        startWatching: "Запустить автоматическое отслеживание папки",
+        importZip: "Импортировать ZIP-файл вручную",
+        startWatching: "Начать автоматическое отслеживание папки",
         stopWatching: "Остановить автоматическое отслеживание",
-        scanExisting: "Сканировать существующие файлы в папке",
+        scanExisting: "Обработать все существующие файлы",
         checkStatus: "Проверить статус отслеживания",
-        debugSettings: "Отладка текущих настроек"
+        debugSettings: "Отладить текущие настройки",
+        scanExistingDesc: "Просканировать отслеживаемую папку и импортировать все существующие ZIP-файлы, которые еще не были обработаны."
     },
     notifications: {
         success: {
-            imported: "Встреча '{{title}}' успешно импортирована!",
-            watchingStarted: "Автоматическое отслеживание запущено для: {{path}}",
-            watchingStopped: "Автоматическое отслеживание остановлено",
-            settingsReset: "Настройки сброшены к значениям по умолчанию"
+            imported: "Успешно импортирован: {{fileName}}",
+            watchingStarted: "Начато отслеживание папки: {{folderPath}}",
+            watchingStopped: "Отслеживание папки остановлено.",
+            settingsReset: "Настройки были сброшены до значений по умолчанию."
         },
         error: {
-            invalidZip: "Неверный ZIP-файл: {{file}}",
-            missingFiles: "Необходимые файлы не найдены в: {{file}}",
-            createNote: "Не удалось создать заметку для: {{title}}",
-            copyAudio: "Не удалось скопировать аудиофайл для: {{title}}",
-            watchingFailed: "Не удалось запустить отслеживание: {{error}}"
+            invalidZip: "Неверный ZIP-файл: {{fileName}}",
+            missingFiles: "В ZIP отсутствуют необходимые файлы: {{fileName}}",
+            createNote: "Ошибка создания заметки для: {{fileName}} - {{error}}",
+            copyAudio: "Ошибка копирования аудио для: {{fileName}} - {{error}}",
+            watchingFailed: "Не удалось начать отслеживание: {{error}}",
+            noFileSelected: "Файл не выбран.",
+            importFailedGeneral: "Ошибка импорта: {{error}}",
+            massImportFailed: "Массовый импорт не удался. Проверьте логи для деталей."
         },
         warning: {
-            duplicateSkipped: "Встреча '{{title}}' уже существует - пропущена",
-            duplicateRenamed: "Встреча '{{title}}' уже существует - создана как '{{newTitle}}'",
-            duplicateOverwritten: "Встреча '{{title}}' уже существует - перезаписана"
+            duplicateSkipped: "Пропущен дубликат: {{fileName}}",
+            duplicateRenamed: "Переименован дубликат: {{newName}} из {{originalName}}",
+            duplicateOverwritten: "Перезаписан дубликат: {{fileName}}"
         },
         info: {
-            processing: "Обработка: {{file}}",
-            scanningFolder: "Сканирование папки на предмет ZIP-файлов..."
+            processing: "Обработка: {{fileName}}...",
+            scanningFolder: "Сканирование папки: {{folderPath}}...",
+            scanningFolderComplete: "Сканирование папки и импорт завершены!"
         }
     },
     statusBar: {
@@ -428,22 +536,39 @@ const RU_STRINGS: LocalizedStrings = {
     },
     modals: {
         testImport: {
-            title: "Тестовый импорт ZIP-файла",
-            placeholder: "Введите полный путь к ZIP-файлу...",
-            button: "Тестовый импорт"
+            title: "Тестовый ручной импорт",
+            placeholder: "Выберите ZIP-архив Krisp...",
+            button: "Импортировать выбранный файл",
+            description: "Выберите ZIP-архив вручную, чтобы протестировать процесс импорта.",
+            importing: "Импорт..."
         },
         confirmReset: {
-            title: "Сброс настроек",
-            message: "Вы уверены, что хотите сбросить все настройки к значениям по умолчанию? Это действие нельзя отменить.",
-            confirm: "Сбросить",
+            title: "Подтвердите сброс",
+            message: "Вы уверены, что хотите сбросить все настройки до значений по умолчанию? Это действие нельзя будет отменить.",
+            confirm: "Сбросить настройки",
             cancel: "Отмена"
         },
         logs: {
             title: "Логи плагина",
-            export: "Экспорт",
-            clear: "Очистить",
-            close: "Закрыть"
+            export: "Экспортировать логи",
+            clear: "Очистить логи",
+            close: "Закрыть",
+            description: "Просмотр недавних логов активности для устранения неполадок.",
+            noLogs: "Логов пока нет.",
+            copy: "Копировать логи",
+            copiedNotice: "Логи скопированы в буфер обмена!",
+            clearedNotice: "Логи очищены!"
         }
+    },
+    settingsInfoTooltips: {
+        githubRepoTooltip: "Посетить репозиторий GitHub",
+        reportIssueTooltip: "Сообщить о проблеме",
+        developer: "Разработано: {{author}}",
+        supportDevelopment: "Если вы находите этот плагин полезным, рассмотрите возможность поддержки его разработки: ",
+        donateLinkText: "Поддержать автора",
+        pluginDescription: "Описание: {{description}}",
+        resetSettingsDesc: "Сбросить все настройки плагина к значениям по умолчанию.",
+        supportDevelopmentPlaceholder: "Информация о поддержке для этого плагина не указана автором."
     }
 };
 

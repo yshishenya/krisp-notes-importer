@@ -55,9 +55,32 @@ export default class KrispNotesImporterPlugin extends Plugin {
 				this.loggingService.info('Commands', 'Запущена команда ручного импорта ZIP-файла');
 				new FilePathModal(this.app, async (filePath) => {
 					if (filePath && filePath.trim() !== '') {
-						this.loggingService.info('Commands', `Начинаю ручной импорт файла: ${filePath}`);
-						new Notice(`Starting import for: ${filePath}`);
-						await this.processingService.processZipFile(filePath, this.settingsManager.settings);
+						const trimmedPath = filePath.trim();
+						this.loggingService.info('Commands', `Начинаю ручной импорт файла: ${trimmedPath}`);
+
+						// Устанавливаем статус Processing перед началом импорта
+						if (this.statusBarService) {
+							this.statusBarService.setProcessing(trimmedPath.split('/').pop() || trimmedPath);
+						}
+
+						try {
+							await this.processingService.processZipFile(trimmedPath, this.settingsManager.settings);
+						} catch (error) {
+							// Ошибки из processZipFile уже должны логироваться и выводить Notice
+							// Дополнительно можно убедиться, что статус Error установлен, если ProcessingService это не сделал
+							if (this.statusBarService && this.statusBarService.getCurrentStatus() !== 'error') {
+								this.statusBarService.setError("Ошибка ручного импорта");
+							}
+						} finally {
+							// Восстанавливаем статус StatusBar
+							if (this.statusBarService) {
+								if (this.settingsManager.getSetting('autoScanEnabled') && this.fileWatcherService.isCurrentlyWatching()) {
+									this.statusBarService.setWatching(this.fileWatcherService.getWatchedPath());
+								} else {
+									this.statusBarService.setIdle('Ручной импорт завершен');
+								}
+							}
+						}
 					} else {
 						this.loggingService.warn('Commands', 'Попытка импорта с пустым путем к файлу');
 						new Notice('File path cannot be empty.');
@@ -95,9 +118,9 @@ export default class KrispNotesImporterPlugin extends Plugin {
 			id: 'scan-existing-files',
 			name: this.localizationService.t('commands.scanExisting'),
 			callback: async () => {
-				this.statusBarService.setProcessing('Сканирование файлов');
+				// Логика установки статуса Processing и его сброса теперь полностью внутри fileWatcherService.scanExistingFiles()
 				await this.fileWatcherService.scanExistingFiles();
-				this.statusBarService.setIdle('Сканирование завершено');
+				// Нет необходимости устанавливать здесь setIdle, так как scanExistingFiles это сделает корректно
 			}
 		});
 

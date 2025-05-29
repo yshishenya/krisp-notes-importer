@@ -1,7 +1,7 @@
 {
     "id": "krisp-notes-importer",
     "name": "Krisp Notes Importer",
-    "version": "3.3.12",
+    "version": "3.4.0",
     "minAppVersion": "0.15.0",
     "description": "Автоматический импорт заметок и аудио из ZIP-архивов Krisp в Obsidian с поддержкой русского и английского языков",
     "author": "Yury Shishenya",

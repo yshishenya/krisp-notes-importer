@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)
-![Version](https://img.shields.io/badge/Version-3.3.12-2563EB?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.4.0-2563EB?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-22C55E?style=for-the-badge)
@@ -175,50 +175,70 @@ meeting_stats:
 
 ## ⚙️ Settings
 
-<details>
-<summary>🔧 Basic Settings</summary>
+The plugin offers flexible configuration via the Obsidian settings menu: **Settings → Community Plugins → Krisp Notes Importer**.
 
-- **Watched Folder** - Path where Krisp saves ZIP files
-- **Auto-watching** - Enable automatic folder monitoring
-- **Notes Folder** - Where to save meeting notes in Obsidian
-- **Attachments Folder** - Where to save audio files
+<details>
+<summary>📊 Current Status & Language</summary>
+
+- **Current Status**: Displays the real-time status of the file watching service (Active, Inactive, Warning, etc.).
+- **Interface Language**: Choose between English and Russian for the plugin's UI.
 
 </details>
 
 <details>
-<summary>📝 Templates & Naming</summary>
+<summary>📂 Core: Watching & Automation</summary>
 
-**File Name Templates:**
-- Notes: `{{YYYY}}-{{MM}}-{{DD}}_{{HHMM}}_{{meetingTitle}}`
-- Audio: `{{YYYY}}-{{MM}}-{{DD}}_{{meetingTitle}}_audio`
-
-**Available Variables:**
-- `{{YYYY}}` - Year (2025)
-- `{{MM}}` - Month (03)
-- `{{DD}}` - Day (15)
-- `{{HHMM}}` - Time (1430)
-- `{{meetingTitle}}` - Meeting name
-
-**Content Template:**
-Full customization of note structure with variables for all meeting data.
+- **Watched Folder Path**: Full path to the folder where Krisp saves its ZIP archives.
+- **Enable Auto-Watching**: Toggle to activate/deactivate automatic monitoring of the watched folder.
 
 </details>
 
 <details>
-<summary>🔄 Duplicate Handling</summary>
+<summary>🗄️ Obsidian Storage</summary>
 
-- **Skip** - Ignore existing files
-- **Overwrite** - Replace existing files
-- **Rename** - Create new with suffix `_2`, `_3`, etc. ✅ *Default*
+- **Notes Folder**: Path within your Obsidian vault to save the generated `.md` note files.
+- **Attachments Folder**: Path within your Obsidian vault to save audio files.
 
 </details>
 
 <details>
-<summary>⚡ Post-Import Actions</summary>
+<summary>🎨 Appearance & Naming</summary>
 
-- **Open Note** - Automatically show created note
-- **Delete ZIP** - Remove source file after import
-- **Language** - Interface language (English/Russian)
+- **Note Name Template**: Define the naming pattern for note files (e.g., `{{YYYY}}-{{MM}}-{{DD}}_{{HHMM}}_{{meetingTitle}}`).
+  - Variables: `{{YYYY}}`, `{{MM}}`, `{{DD}}`, `{{HHMM}}`, `{{meetingTitle}}`.
+- **Audio Name Template**: Define the naming pattern for audio files.
+- **Note Content Template**: A large text field to fully customize the Markdown content and structure of your notes using variables and callouts.
+  - Includes a "Restore Default Template" button.
+
+</details>
+
+<details>
+<summary>⚙️ Import Behavior</summary>
+
+- **Duplicate Strategy**: How to handle existing notes with the same name.
+  - Options: Skip, Overwrite, or Create with suffix (default).
+- **Open note after import**: Automatically open the newly created note.
+- **Delete ZIP after import**: Remove the original ZIP file after successful import.
+
+</details>
+
+<details>
+<summary>🛠️ Manual Operations & Diagnostics</summary>
+
+- **Test Manual Import**: Select and import a single ZIP file.
+- **Process All Existing Files**: Scan and import all ZIPs in the watched folder.
+- **Show Logs**: View plugin activity logs in a modal.
+- **Reset Settings**: Revert all plugin settings to their defaults (requires confirmation).
+
+</details>
+
+<details>
+<summary>ℹ️ About Plugin</summary>
+
+- **Plugin Version**: Displays the current installed version.
+- **Links**: GitHub repository, Bug report/Feature request.
+- **Developer Info**: Author of the plugin.
+- **Plugin Description**: Brief overview from the manifest.
 
 </details>
 
