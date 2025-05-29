@@ -13,6 +13,69 @@ export class NoteCreator {
         this.settings = settings;
     }
 
+    // Форматирование Summary блока для лучшей читаемости
+    private formatSummaryForCallout(summaryLines: string[]): string {
+        if (!summaryLines || summaryLines.length === 0) {
+            return '*Краткое содержание недоступно*';
+        }
+
+        const outputLines: string[] = [];
+        let sectionCounter = 0;
+        let inListItemContinuation = false;
+
+        for (let i = 0; i < summaryLines.length; i++) {
+            const line = summaryLines[i];
+            const strippedLine = line.trim();
+
+            // Пропустить пустые строки
+            if (strippedLine === '') {
+                outputLines.push('');
+                inListItemContinuation = false;
+                continue;
+            }
+
+            // Пропустить строку "Summary" если это первая значимая строка
+            if (sectionCounter === 0 && strippedLine.toLowerCase() === 'summary') {
+                continue;
+            }
+
+            // Проверка на маркер списка (- или * или •)
+            const isListMarker = /^[-*•]\s+/.test(strippedLine);
+
+            if (isListMarker) {
+                // Это новый элемент списка
+                const listText = strippedLine.replace(/^[-*•]\s+/, '');
+                outputLines.push(`- ${listText}`);
+                inListItemContinuation = true;
+            } else {
+                if (inListItemContinuation) {
+                    // Это продолжение предыдущего элемента списка
+                    outputLines.push(`  ${strippedLine}`);
+                } else {
+                    // Это новый заголовок секции
+                    inListItemContinuation = false;
+                    sectionCounter++;
+
+                    // Добавляем пустую строку перед новым заголовком (если это не первый)
+                    if (sectionCounter > 1) {
+                        outputLines.push('');
+                    }
+
+                    outputLines.push(`### ${sectionCounter}. ${strippedLine}`);
+                    outputLines.push(''); // Пустая строка после заголовка
+                }
+            }
+        }
+
+        // Добавляем префикс > ко всем строкам для callout
+        return outputLines.map(line => {
+            if (line === '') {
+                return '>';
+            }
+            return `> ${line}`;
+        }).join('\n');
+    }
+
     // Заполняет шаблон заметки данными
     private applyTemplate(template: string, data: ParsedKrispData, settings: KrispImporterSettings, noteFileName?: string, audioFilePath?: string): string {
         let content = template;
@@ -53,18 +116,7 @@ export class NoteCreator {
 
         // Секции Krisp - правильное форматирование для callout блоков
         const summaryText = data.summary?.length
-            ? data.summary.map(line => {
-                // Если строка начинается с "- " или "* ", это элемент списка
-                if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-                    return line.trim();
-                }
-                // Если строка пустая, оставляем пустую строку
-                if (line.trim() === '') {
-                    return '';
-                }
-                // Обычный текст
-                return line.trim();
-            }).join('\n>\n> ')
+            ? this.formatSummaryForCallout(data.summary)
             : '*Краткое содержание недоступно*';
         content = content.replace(/{{summary}}/g, summaryText);
 

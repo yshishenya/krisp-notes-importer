@@ -1,9 +1,10 @@
 {
     "id": "krisp-notes-importer",
     "name": "Krisp Notes Importer",
-    "version": "3.3.10",
+    "version": "3.3.11",
     "minAppVersion": "0.15.0",
-    "description": "Import Krisp meeting notes automatically. Processes ZIP archives, creates structured Markdown notes with analytics, smart tags, and beautiful callout formatting.",
-    "author": "Yan Shishenya",
-    "isDesktopOnly": true
+    "description": "Автоматический импорт заметок и аудио из ZIP-архивов Krisp в Obsidian с поддержкой русского и английского языков",
+    "author": "Yury Shishenya",
+    "authorUrl": "https://github.com/yshishenya",
+    "isDesktopOnly": false
 }
