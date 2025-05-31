@@ -73,10 +73,9 @@ export class ZipExtractor {
         }
     }
 
-    /**
-     * Удаляет временную директорию и ее содержимое.
-     * @param tempDirPath Путь к временной директории.
-     */
+    \**
+    ['* /**', '*  * Asynchronously removes a temporary directory and its contents.', '*  *', '*  * This function checks if the provided `tempDirPath` exists, then proceeds to remove', '*  * it recursively using `rmSync`. If an error occurs during removal, a notice is displayed,', '*  * and the error is logged. Non-critical errors are caught to prevent interruption of', '*  * further execution.', '*  *', '*  * @param tempDirPath - The path to the temporary directory that needs to be cleaned up.', '*  */']
+    \*
     async cleanup(tempDirPath: string | null): Promise<void> {
         if (!tempDirPath) return;
 
