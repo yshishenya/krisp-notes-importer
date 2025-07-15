@@ -216,6 +216,16 @@ export class KrispSettingsTab extends PluginSettingTab {
                 }));
     }
 
+    /**
+     * Renders the naming and template settings section within a provided container element.
+     *
+     * This function creates an 'h2' heading and several settings controls for configuring note name, attachment name,
+     * and note content templates. It uses localization to set names and descriptions dynamically. Each setting includes
+     * text or textarea inputs with placeholders and event handlers to update the corresponding plugin settings asynchronously.
+     * Additionally, buttons are provided to restore default, improved, or compact templates for note content.
+     *
+     * @param containerEl - The HTML element where the settings will be rendered.
+     */
     private renderNamingAndTemplateSettings(containerEl: HTMLElement): void {
         containerEl.createEl('h2', { text: this.localization.t('settings.sections.namingAndTemplates', {fallback: "🎨 Appearance & Naming"}) });
 
