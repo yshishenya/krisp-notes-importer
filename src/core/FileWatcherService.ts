@@ -305,7 +305,7 @@ export class FileWatcherService {
     }
 
     /**
-     * Обработать новый ZIP-файл
+     * Processes a new ZIP file using the provided settings.
      */
     private async processNewZipFile(zipFilePath: string, settings: KrispImporterSettings): Promise<void> {
         try {
@@ -326,7 +326,14 @@ export class FileWatcherService {
     }
 
     /**
-     * Сканировать папку на предмет существующих ZIP-файлов
+     * Scans a directory for existing ZIP files and processes them.
+     *
+     * This function checks if a watched path is set, initializes processing status,
+     * reads the directory, filters out ZIP files, and processes each file individually.
+     * It handles multiple files by enabling batch operations, updates progress,
+     * and logs errors. Finally, it restores the status bar after processing.
+     *
+     * @returns A promise that resolves when all files are processed or an error occurs.
      */
     async scanExistingFiles(): Promise<void> {
         if (!this.watchedPath) {

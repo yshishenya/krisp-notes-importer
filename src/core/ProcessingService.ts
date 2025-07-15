@@ -144,7 +144,18 @@ export class ProcessingService {
     }
 
     /**
-     * ERROR BOUNDARY: Safe processing of individual meetings
+     * Safely processes individual meetings from a list of meeting folders.
+     *
+     * This function iterates over each meeting folder, reads and validates notes and transcript files,
+     * parses the content, and creates notes using NoteCreator. It handles errors gracefully, logs detailed
+     * information, and updates the user through notifications. The function supports batch processing for
+     * multiple meetings and provides a summary of the import process.
+     *
+     * @param meetingFolders - An array of Dirent objects representing the meeting folders to be processed.
+     * @param tempDirPath - The path to the temporary directory containing the meeting folders.
+     * @param zipFileName - The name of the zip file from which the meetings were extracted.
+     * @param settings - Configuration settings for the KrispImporter.
+     * @returns An object containing the count of imported meetings, error count, and details of the last created note.
      */
     private async processMeetingsWithErrorHandling(
         meetingFolders: Dirent[],
@@ -398,7 +409,15 @@ export class ProcessingService {
     }
 
     /**
-     * ERROR BOUNDARY: Safe post-processing and cleanup
+     * Handles post-processing and cleanup after a file import operation.
+     *
+     * This function checks the processing results for errors, deletes the ZIP file if configured,
+     * and optionally opens the last created note. It logs detailed debug information throughout its execution.
+     *
+     * @param processingResult - An object containing the imported count, error count, and details of the last created note.
+     * @param zipFilePath - The path to the ZIP file that needs to be processed or deleted.
+     * @param zipFileName - The name of the ZIP file for display purposes in notifications.
+     * @param settings - Configuration settings for post-processing behaviors such as deleting the ZIP file and opening notes.
      */
     private async handlePostProcessingWithErrorHandling(
         processingResult: { importedCount: number; errorCount: number; lastCreatedNote: { notePath?: string, audioDestPath?: string, noteFile?: TFile } | null },
