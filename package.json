@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "esbuild.config.mjs",
 		"build": "node esbuild.config.mjs production",
-		"version": "node esbuild.config.mjs production",
+		"version": "node -e \"const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json')); const manifest=JSON.parse(fs.readFileSync('manifest.json')); manifest.version=pkg.version; fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 4)); console.log('✅ manifest.json updated to v' + pkg.version);\" && node esbuild.config.mjs production",
 		"release": "node -e \"const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json')); const v=pkg.version; const date=new Date().toISOString().split('T')[0]; let ch=fs.readFileSync('CHANGELOG.md','utf8'); ch=ch.replace('## [Unreleased]', `## [${v}] - ${date}`); fs.writeFileSync('CHANGELOG.md',ch); console.log(`✅ CHANGELOG updated for v${v}`); console.log('Next: git add . && git commit -m \\\"v'+v+': Description\\\" && git tag '+v+' && git push origin master --tags');\"",
 		"postversion": "npm run release"
 	},
