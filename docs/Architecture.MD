@@ -1,294 +1,313 @@
-# Архитектура плагина "Krisp Notes Importer"
+# Архитектура плагина "Krisp Notes Importer" v3.4.1+
 
-## 1. Обзор
+## 1. Обзор архитектуры
 
-Плагин "Krisp Notes Importer" для Obsidian будет построен на модульной архитектуре, чтобы обеспечить гибкость, расширяемость и простоту поддержки. Основные компоненты будут взаимодействовать через четко определенные интерфейсы. Плагин будет использовать стандартный API Obsidian для взаимодействия с хранилищем, файловой системой и пользовательским интерфейсом.
+Плагин "Krisp Notes Importer" построен на современной модульной архитектуре с **Dependency Injection** паттерном, обеспечивающей высокую тестируемость, масштабируемость и поддерживаемость. Архитектура следует принципам **SOLID** и использует специализированные сервисы с четким разделением ответственностей.
 
-## 2. Компоненты плагина
+### Ключевые архитектурные принципы:
+- **Single Responsibility Principle**: каждый сервис имеет одну четко определенную ответственность
+- **Dependency Injection**: все зависимости инжектируются через IoC контейнер
+- **Interface Segregation**: все сервисы реализуют минимальные интерфейсы
+- **Error Boundaries**: централизованная обработка ошибок с graceful degradation
+- **Performance Optimization**: специальная оптимизация для файлов >100MB
 
-### 2.1. `MainPlugin (main.ts)` - Основной класс плагина
-*   **Ответственность:**
-    *   Инициализация и деинициализация плагина (загрузка/выгрузка).
-    *   Регистрация настроек плагина в Obsidian.
-    *   Регистрация команд плагина (ручной импорт, открытие настроек).
-    *   Создание и управление экземплярами других компонентов (менеджер настроек, сервис отслеживания, сервис обработки, сервис уведомлений).
-    *   Координация взаимодействия между компонентами.
-*   **Методы:**
-    *   `onload()`: Вызывается при загрузке плагина. Инициализирует компоненты, загружает настройки, запускает отслеживание (если включено).
-    *   `onunload()`: Вызывается при выгрузке плагина. Останавливает отслеживание, освобождает ресурсы.
-    *   `loadSettings()`: Загружает настройки плагина из хранилища Obsidian.
-    *   `saveSettings()`: Сохраняет настройки плагина.
-    *   Команды для палитры команд Obsidian (например, `importSingleZip`, `importAllZipsInWatchedFolder`, `openSettings`).
-
-### 2.2. `SettingsManager` - Менеджер настроек
-*   **Ответственность:**
-    *   Хранение текущих настроек плагина.
-    *   Предоставление доступа к настройкам другим компонентам.
-    *   Загрузка и сохранение настроек (взаимодействует с `MainPlugin` и Obsidian API для хранения данных).
-    *   Валидация настроек.
-*   **Структура данных настроек (пример):**
-    ```typescript
-    interface KrispImporterSettings {
-        watchedFolderPath: string;
-        notesFolderPath: string;    // Относительно корня хранилища
-        attachmentsFolderPath: string; // Относительно корня хранилища
-        noteNameTemplate: string;
-        attachmentNameTemplate: string;
-        noteContentTemplate: string;
-        duplicateStrategy: 'skip' | 'overwrite' | 'rename';
-        deleteZipAfterImport: boolean;
-        openNoteAfterImport: boolean;
-        autoScanEnabled: boolean; // Включено ли автоматическое отслеживание
-        // ... другие настройки из SRS
-    }
-    ```
-*   **Методы:**
-    *   `getSetting(key)`: Получить значение настройки.
-    *   `updateSetting(key, value)`: Обновить значение настройки.
-    *   `getAllSettings()`: Получить все настройки.
-    *   `load()`: Загрузить настройки.
-    *   `save()`: Сохранить настройки.
-    *   `validate()`: Проверить корректность настроек (например, существование папок, если это применимо до запуска).
-
-### 2.3. `FileWatcherService` - Сервис отслеживания папки ✅ **РЕАЛИЗОВАН v3.0.0**
-*   **Ответственность:**
-    *   Мониторинг указанной в настройках папки на предмет появления новых `.zip` файлов.
-    *   Использование Node.js `fs.watch` для реального отслеживания файловой системы.
-    *   Проверка стабильности файлов (ожидание завершения копирования).
-    *   Передача пути к новому ZIP-файлу в `ProcessingService` для обработки.
-*   **Методы:**
-    *   `startWatching(folderPath)`: Начать отслеживание указанной папки.
-    *   `stopWatching()`: Прекратить отслеживание.
-    *   `isCurrentlyWatching()`: Проверка статуса отслеживания.
-    *   `getWatchedPath()`: Получение текущего пути отслеживания.
-    *   `scanExistingFiles()`: Массовое сканирование существующих ZIP-файлов.
-    *   `waitForFileStability(filePath)`: Ожидание завершения копирования файла.
-
-### 2.4. `ProcessingService` - Сервис обработки файлов
-*   **Ответственность:**
-    *   Полный цикл обработки одного ZIP-файла.
-    *   Взаимодействие с `ZipExtractor` для распаковки.
-    *   Взаимодействие с `NoteParser` для извлечения данных из текстовых файлов.
-    *   Взаимодействие с `NoteCreator` для создания Markdown-заметки.
-    *   Взаимодействие с Obsidian API для работы с файлами (создание, перемещение).
-    *   Обработка логики дубликатов согласно настройкам.
-    *   Управление временными файлами/папками.
-*   **Методы:**
-    *   `processZipFile(zipFilePath)`: Основной метод, запускающий обработку ZIP-файла.
-    *   `handleDuplicate(filePath, strategy)`: Логика обработки дубликатов.
-
-### 2.5. `ZipExtractor` - Извлекатель из ZIP
-*   **Ответственность:**
-    *   Распаковка содержимого ZIP-архива во временную директорию.
-    *   Использование библиотеки типа `jszip`.
-*   **Методы:**
-    *   `extract(zipFilePath, tempDirPath)`: Распаковать архив.
-    *   `cleanup(tempDirPath)`: Удалить временную директорию.
-
-### 2.6. `NoteParser` - Парсер заметок Krisp
-*   **Ответственность:**
-    *   Извлечение структурированных данных из файлов `meeting_notes.txt` и `transcript.txt`.
-    *   Определение даты, времени, названия встречи, участников, резюме, ключевых моментов, списка действий.
-    *   Форматирование транскрипта (например, создание кликабельных временных меток).
-    *   Вся логика, которая ранее была в bash-скрипте по извлечению данных.
-*   **Методы:**
-    *   `parseMeetingNotes(notesContent: string, meetingFolderName: string)`: Извлечь данные из `meeting_notes.txt` и имени папки.
-    *   `parseTranscript(transcriptContent: string)`: Извлечь участников и отформатировать транскрипт.
-    *   Вспомогательные методы для извлечения конкретных секций (например, `extractDate`, `extractTime`, `extractParticipants`, `extractActionItems`).
-
-### 2.7. `NoteCreator` - Создатель заметок Obsidian
-*   **Ответственность:**
-    *   Формирование содержимого Markdown-заметки на основе извлеченных данных и пользовательского шаблона (или шаблона по умолчанию).
-    *   Создание YAML Frontmatter.
-    *   Сохранение заметки в указанной папке в хранилище Obsidian с использованием API.
-*   **Методы:**
-    *   `createNote(parsedData, settings)`: Создать и сохранить заметку.
-    *   `applyTemplate(templateString, data)`: Заполнить шаблон данными.
-
-### 2.8. `NotificationService` - Сервис уведомлений ✅ **РЕАЛИЗОВАН**
-*   **Ответственность:**
-    *   Отображение уведомлений пользователю (успех, ошибка, дубликат) с использованием Obsidian API (`new Notice(...)`).
-    *   Формирование текстов уведомлений.
-    *   Возможно, реализация интерактивных уведомлений, если API позволяет.
-*   **Методы:**
-    *   `showSuccess(message)`.
-    *   `showError(message)`.
-    *   `showWarning(message)`.
-    *   `showDuplicateFound(fileName, strategy, actions)`: Уведомление о дубликате с возможными действиями.
-
-### 2.10. `LoggingService` - Система логирования ✅ **РЕАЛИЗОВАН v3.2.0**
-*   **Ответственность:**
-    *   Ведение подробного журнала работы плагина для диагностики.
-    *   Поддержка уровней логирования (DEBUG, INFO, WARN, ERROR).
-    *   Категоризация событий (Processing, FileWatcher, Settings, Commands).
-    *   Экспорт логов в различных форматах.
-    *   UI для просмотра логов через модальное окно.
-*   **Методы:**
-    *   `log(level, category, message, details?)`: Основной метод логирования.
-    *   `info(category, message)`, `warn(category, message)`, `error(category, message)`.
-    *   `exportLogs(format)`: Экспорт в текстовый или JSON формат.
-    *   `clearLogs()`: Очистка журнала логов.
-
-### 2.11. `StatusBarService` - Индикация статуса ✅ **РЕАЛИЗОВАН v3.2.0**
-*   **Ответственность:**
-    *   Отображение текущего статуса плагина в строке состояния Obsidian.
-    *   Анимированные иконки для различных состояний.
-    *   Цветовая индикация (зеленый/синий/красный/серый).
-    *   Интерактивность (клик для открытия настроек).
-*   **Методы:**
-    *   `setIdle(message?)`, `setWatching(path)`, `setProcessing(message)`, `setError(message)`.
-    *   `setTemporaryMessage(message, duration)`: Временные сообщения с автосбросом.
-
-### 2.12. `LocalizationService` - Служба локализации ✅ **РЕАЛИЗОВАН v3.3.0**
-*   **Ответственность:**
-    *   Поддержка многоязычного интерфейса (русский/английский).
-    *   Динамическое переключение языка без перезагрузки.
-    *   Локализация всех строк интерфейса, команд, уведомлений.
-    *   Контекстная передача переводов в модальные окна.
-*   **Методы:**
-    *   `t(key, params?)`: Получение переведенной строки с параметрами.
-    *   `setLanguage(language)`: Изменение текущего языка.
-    *   `getCurrentLanguage()`: Получение текущего языка.
-    *   `getSettingsStrings()`, `getCommandStrings()`: Получение групп переводов.
-
-### 2.9. `SettingsUI (SettingsTab.ts)` - Пользовательский интерфейс настроек
-*   **Ответственность:**
-    *   Создание и отображение вкладки настроек плагина в Obsidian.
-    *   Предоставление пользователю элементов управления для всех настраиваемых параметров (текстовые поля, выпадающие списки, чекбоксы, кнопки выбора папок).
-    *   Взаимодействие с `SettingsManager` для загрузки и сохранения настроек.
-    *   Реализация "Мастера первоначальной настройки", "Тестового импорта" и других интерактивных элементов UI.
-*   **Методы (внутренние, для построения UI):**
-    *   `display()`: Основной метод, вызываемый Obsidian для отрисовки вкладки настроек.
-    *   Методы для создания каждого элемента управления (например, `createFolderPathSetting`, `createTemplateSetting`).
-
-## 3. Потоки данных и взаимодействие
-
-1.  **Загрузка плагина:** `MainPlugin.onload()` -> `SettingsManager.load()` -> `FileWatcherService.startWatching()` (если включено).
-2.  **Обнаружение нового файла:** `FileWatcherService` -> `ProcessingService.processZipFile()`.
-3.  **Обработка ZIP:**
-    *   `ProcessingService` -> `ZipExtractor.extract()`.
-    *   `ProcessingService` читает файлы -> `NoteParser.parseMeetingNotes()`, `NoteParser.parseTranscript()`.
-    *   `ProcessingService` проверяет дубликаты (используя Obsidian API для проверки существования файлов).
-    *   `ProcessingService` -> `NoteCreator.createNote()` (использует `SettingsManager` для шаблонов).
-    *   `ProcessingService` перемещает аудиофайл (Obsidian API).
-    *   `ProcessingService` -> `NotificationService.showSuccess()` или `showError()`.
-    *   `ProcessingService` (опционально) удаляет ZIP-файл.
-4.  **Изменение настроек:** Пользователь в `SettingsUI` -> `SettingsManager.updateSetting()` -> `SettingsManager.save()`.
-5.  **Ручной импорт:** Команда в Obsidian -> `MainPlugin` -> `ProcessingService.processZipFile()` (для одного файла) или итерация по файлам в папке.
-
-## 4. Используемые технологии и API Obsidian
-
-*   **Язык:** TypeScript.
-*   **Сборка:** Стандартный процесс сборки для плагинов Obsidian (например, через `npm run dev` или `npm run build`).
-*   **Obsidian API:**
-    *   `Plugin`, `App`, `Vault`, `Workspace`, `Notice`, `Setting`, `PluginSettingTab`.
-    *   `Vault.on('create', ...)`, `Vault.getAbstractFileByPath()`, `Vault.create()`, `Vault.modify()`, `Vault.rename()`, `Vault.delete()`.
-    *   `DataAdapter.read()`, `DataAdapter.write()`.
-    *   API для работы с настройками: `loadData()`, `saveData()`.
-*   **Сторонние библиотеки:**
-    *   `jszip` (или аналогичная) для работы с ZIP-архивами.
-
-## 5. Расширяемость
-
-*   Четкое разделение на сервисы позволит в будущем добавлять новые функции (например, поддержку других форматов встреч, кроме Krisp) с меньшими изменениями в существующем коде.
-*   Использование шаблонов для заметок уже обеспечивает хорошую гибкость для пользователя.
-
-## 6. Каталог с исходным кодом (финальная структура v3.4.0)
+## 2. Высокоуровневая архитектура
 
 ```
-krisp-notes-importer/
-├── src/
-│   ├── main.ts                     # ✅ MainPlugin с полной интеграцией
-│   ├── core/
-│   │   ├── SettingsManager.ts      # ✅ РЕАЛИЗОВАН
-│   │   ├── FileWatcherService.ts   # ✅ РЕАЛИЗОВАН v3.0.0
-│   │   ├── ProcessingService.ts    # ✅ РЕАЛИЗОВАН
-│   │   ├── ZipExtractor.ts         # ✅ РЕАЛИЗОВАН
-│   │   ├── NoteParser.ts           # ✅ РЕАЛИЗОВАН
-│   │   ├── NoteCreator.ts          # ✅ РЕАЛИЗОВАН
-│   │   ├── NotificationService.ts  # ✅ РЕАЛИЗОВАН
-│   │   ├── LoggingService.ts       # ✅ РЕАЛИЗОВАН v3.2.0
-│   │   ├── StatusBarService.ts     # ✅ РЕАЛИЗОВАН v3.2.0
-│   │   └── LocalizationService.ts  # ✅ РЕАЛИЗОВАН v3.3.0
-│   ├── ui/
-│   │   └── SettingsTab.ts          # ✅ Полный UI с локализацией
-│   └── interfaces.ts               # ✅ Все интерфейсы и типы
-├── dist/                           # Готовые файлы для релиза
-│   ├── main.js                     # Собранный код
-│   ├── manifest.json               # Метаданные
-│   ├── styles.css                  # Стили
-│   └── krisp-notes-importer.zip    # Архив для установки
-├── docs/                           # Полная документация
-├── .github/workflows/              # GitHub Actions
-├── styles.css                      # Стили интерфейса
-├── manifest.json                   # Метаданные плагина
-├── package.json                    # Конфигурация проекта
-├── tsconfig.json                   # Настройки TypeScript
-└── esbuild.config.mjs              # Конфигурация сборки
+┌─────────────────────────────────────────────────────────────┐
+│                     Main Plugin                             │
+│  ┌─────────────────┐    ┌─────────────────────────────────┐ │
+│  │ SettingsManager │    │      ServiceContainer          │ │
+│  │                 │    │  (Dependency Injection)        │ │
+│  └─────────────────┘    └─────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                                    │
+                   ┌────────────────┼────────────────┐
+                   │                │                │
+┌─────────────────────────────────────────────────────────────┐
+│            ProcessingOrchestrator                           │
+│              (Main Coordinator)                             │
+└─────────────────────────────────────────────────────────────┘
+                   │
+    ┌──────────────┼──────────────┐
+    │              │              │
+┌──────────┐ ┌────────────┐ ┌─────────────┐ ┌─────────────────┐
+│Extraction│ │  Parsing   │ │   Import    │ │ Error Handling  │
+│ Service  │ │  Service   │ │  Service    │ │    Service      │
+└──────────┘ └────────────┘ └─────────────┘ └─────────────────┘
+     │             │             │                │
+┌──────────┐ ┌────────────┐ ┌─────────────┐ ┌─────────────────┐
+│   ZIP    │ │ NoteParser │ │NoteCreator  │ │  Notification   │
+│Extractor │ │ (Streaming)│ │             │ │    Service      │
+└──────────┘ └────────────┘ └─────────────┘ └─────────────────┘
 ```
 
-### Статус реализации: **100% ЗАВЕРШЕНО** ✅
+## 3. Основные компоненты
 
-Все компоненты архитектуры полностью реализованы и интегрированы.
+### 3.1. **MainPlugin (main.ts)** - Точка входа
+**Ответственности:**
+- Инициализация IoC контейнера и регистрация сервисов
+- Lifecycle management плагина (onload/onunload)
+- Регистрация команд Obsidian
+- Запуск FileWatcherService для автоматического мониторинга
 
-## 7. Система уведомлений
+**Ключевые методы:**
+```typescript
+async onload(): Promise<void>
+async onunload(): Promise<void>
+initializeServices(): void
+registerCommands(): void
+```
 
-### Принципы уведомлений
-- **Своевременность** - появляются когда необходимо
-- **Информативность** - достаточно информации для понимания
-- **Ненавязчивость** - не мешают работе пользователя
-- **Действенность** - предлагают варианты действий
+### 3.2. **ServiceContainer** - IoC контейнер
+**Ответственности:**
+- Управление жизненным циклом всех сервисов
+- Dependency injection и разрешение зависимостей
+- Поддержка singleton и transient регистраций
+- Детекция циклических зависимостей
 
-### Типы уведомлений
-- **Успешный импорт** - информация об успешной обработке встречи
-- **Ошибки импорта** - сообщения об ошибках (распаковка, отсутствие файлов, ошибки чтения/записи)
-- **Обнаружение дубликата** - предупреждение в зависимости от стратегии обработки
-- **Статус отслеживания** - начало/завершение отслеживания папки
-- **Ошибки конфигурации** - некорректные настройки
-- **Массовый импорт** - статус обработки нескольких файлов
+**Ключевые методы:**
+```typescript
+register<T>(identifier: ServiceIdentifier<T>, factory: () => T): void
+registerSingleton<T>(identifier: ServiceIdentifier<T>, factory: () => T): void
+resolve<T>(identifier: ServiceIdentifier<T>): T
+dispose(): void
+```
 
-### Логирование
-Подробный журнал работы плагина через `LoggingService`:
-- Уровни: DEBUG, INFO, WARN, ERROR
-- Категории: Processing, FileWatcher, Settings, Commands
-- UI для просмотра логов через модальное окно
-- Экспорт в текстовый или JSON формат
+### 3.3. **ProcessingOrchestrator** - Главный координатор
+**Ответственности:**
+- Координация всего процесса импорта Krisp файлов
+- Управление фазами обработки (extraction → parsing → import → post-processing)
+- Прогресс-трекинг и мониторинг производительности
+- Graceful error handling с recovery механизмами
 
-## 8. Управление релизами
+**Фазы обработки:**
+1. **Extraction Phase**: Извлечение ZIP и поиск папок встреч
+2. **Parsing Phase**: Парсинг данных с оптимизацией больших файлов
+3. **Import Phase**: Создание заметок и обработка аудио
+4. **Post-processing Phase**: Cleanup, удаление ZIP, открытие заметок
 
-### Автоматизация релизов
-GitHub Actions автоматически создает релизы при создании тега:
-- Файл: `.github/workflows/release.yml`
-- Сборка проекта из исходников
-- Создание GitHub Release
-- Генерация ZIP-архива с файлами: `main.js`, `manifest.json`, `styles.css`
+### 3.4. **Специализированные сервисы**
 
-### Процесс релиза
-1. **Подготовка**: обновление версий в `package.json`, `manifest.json`, `CHANGELOG.md`
-2. **Сборка**: `npm run build`
-3. **Создание тега**: `git tag X.Y.Z && git push origin master --tags`
-4. **Автоматический релиз**: GitHub Actions создает релиз с ZIP-архивом
+#### **MeetingExtractionService**
+**Ответственности:**
+- Извлечение ZIP архивов через ZipExtractor
+- Поиск и валидация папок встреч
+- Обнаружение аудиофайлов различных форматов
+- Валидация структуры Krisp директорий
 
-### Типы релизов
-- **Patch** (X.Y.Z+1) - исправления ошибок, мелкие улучшения
-- **Minor** (X.Y+1.0) - новые функции, обратная совместимость
-- **Major** (X+1.0.0) - кардинальные изменения архитектуры
+#### **MeetingParsingService**
+**Ответственности:**
+- Парсинг meeting_notes.txt и transcript.txt
+- **Стриминг больших транскриптов >100MB**
+- Контроль использования памяти (лимит 50MB)
+- Валидация парсенных данных
 
-### Метрики качества
-- Время сборки: < 30 секунд
-- Размер релиза: ~52KB (оптимизированный)
-- Успешность установки: 100%
-- Обратная совместимость: сохранение настроек
+**Алгоритм оптимизации больших файлов:**
+```typescript
+// Для файлов >100MB используется стриминг
+if (fileSize > 100MB) {
+    return await this.readLargeTranscriptFile(filePath);
+} else {
+    return await fsPromises.readFile(filePath, 'utf-8');
+}
+```
 
----
+#### **MeetingImportService**
+**Ответственности:**
+- Создание Markdown заметок через NoteCreator
+- Координация импорта множественных встреч
+- Post-import действия (удаление ZIP, открытие заметок)
+- Статистика и отчеты по импорту
 
-*Последнее обновление: 2025-05-29*
+#### **ErrorHandlingService**
+**Ответственности:**
+- Централизованная обработка всех типов ошибок
+- Классификация ошибок по типам и важности
+- User-friendly уведомления
+- Логирование с контекстом
 
-**Версия документа**: 1.3 (от 2025-05-29)
+**Типы ошибок:**
+- **Extraction errors**: проблемы с ZIP файлами
+- **Parsing errors**: некорректные данные Krisp
+- **Import errors**: проблемы создания заметок
+- **File system errors**: права доступа, место на диске
+- **Critical errors**: системные сбои
 
-| Дата       | Версия | Описание изменений                                      | Автор        |
-|------------|--------|---------------------------------------------------------|--------------|
-| 2025-05-12 | 1.0    | Начальная версия документа архитектуры                   | ИИ Ассистент |
-| 2025-05-18 | 1.1    | Добавлены описания всех ключевых сервисов (v3.3.0)     | ИИ Ассистент |
-| 2025-05-26 | 1.2    | Обновлена диаграмма компонентов, уточнены зависимости   | ИИ Ассистент |
-| 2025-05-29 | 1.3    | Актуализирована информация о NoteCreator и NoteParser   | ИИ Ассистент |
+## 4. Dependency Injection система
+
+### 4.1. Service Identifiers
+```typescript
+export const SERVICE_IDENTIFIERS = {
+    // Основные сервисы
+    App: { name: 'App' },
+    NotificationService: { name: 'NotificationService' },
+    LoggingService: { name: 'LoggingService' },
+    StatusBarService: { name: 'StatusBarService' },
+
+    // Специализированные сервисы
+    MeetingExtractionService: { name: 'MeetingExtractionService' },
+    MeetingParsingService: { name: 'MeetingParsingService' },
+    MeetingImportService: { name: 'MeetingImportService' },
+    ErrorHandlingService: { name: 'ErrorHandlingService' },
+
+    // Оркестратор
+    ProcessingOrchestrator: { name: 'ProcessingOrchestrator' }
+} as const;
+```
+
+### 4.2. Service Registration Flow
+```typescript
+// 1. Базовые сервисы (без зависимостей)
+container.registerSingleton(SERVICE_IDENTIFIERS.NotificationService, () => new NotificationService());
+
+// 2. Сервисы с простыми зависимостями
+container.registerSingleton(SERVICE_IDENTIFIERS.ErrorHandlingService, () => {
+    const notificationService = container.resolve(SERVICE_IDENTIFIERS.NotificationService);
+    return new ErrorHandlingService(notificationService);
+});
+
+// 3. Главный оркестратор (зависит от всех сервисов)
+container.registerSingleton(SERVICE_IDENTIFIERS.ProcessingOrchestrator, () => {
+    // Resolved все зависимости и создает оркестратор
+});
+```
+
+## 5. Поток данных и обработка
+
+### 5.1. Типы данных между сервисами
+```typescript
+interface ExtractionResult {
+    tempDirPath: string;
+    meetingFolders: MeetingFolder[];
+}
+
+interface ParsingResult {
+    parsedData: ParsedKrispData;
+    audioFilePath: string;
+    meetingFolderName: string;
+}
+
+interface ProcessingResult {
+    importedCount: number;
+    errorCount: number;
+    lastCreatedNote: ImportResult | null;
+}
+```
+
+### 5.2. Полный цикл обработки
+```
+ZIP File → MeetingExtractionService → ExtractionResult
+                ↓
+MeetingParsingService → ParsingResult[]
+                ↓
+MeetingImportService → ProcessingResult
+                ↓
+Post-processing (ZIP deletion, note opening)
+```
+
+## 6. Оптимизация производительности
+
+### 6.1. Обработка больших файлов (>100MB)
+- **Streaming parsing** через Node.js readline
+- **Memory limits**: максимум 50MB для транскриптов
+- **Progress callbacks** для длительных операций
+- **Graceful truncation** при превышении лимитов
+
+### 6.2. Memory Management
+```typescript
+const PERFORMANCE_LIMITS = {
+    MAX_TRANSCRIPT_MEMORY_MB: 50,
+    LARGE_FILE_CHUNK_SIZE: 64 * 1024,
+    STREAMING_BUFFER_SIZE: 1024 * 1024,
+    ENTITIES_TEXT_LIMIT: 5000,
+    SMART_TAGS_TEXT_LIMIT: 3000
+} as const;
+```
+
+### 6.3. Error Recovery Strategies
+- **Recoverable errors**: file not found, parsing issues → continue processing
+- **Non-recoverable errors**: disk space, critical system errors → stop processing
+- **Partial success**: некоторые встречи импортированы, другие с ошибками
+
+## 7. Тестируемость и качество кода
+
+### 7.1. Мокирование для тестов
+Каждый сервис может быть легко замокан через интерфейсы:
+```typescript
+const mockExtractionService: IMeetingExtractionService = {
+    extractZipFile: jest.fn().mockResolvedValue(mockResult),
+    discoverMeetingFolders: jest.fn(),
+    // ...
+};
+```
+
+### 7.2. Integration тесты
+```typescript
+// Тест полного цикла обработки
+it('should process complete ZIP file', async () => {
+    const orchestrator = container.resolve(SERVICE_IDENTIFIERS.ProcessingOrchestrator);
+    await orchestrator.processZipFile(testZipPath, testSettings);
+    // Assertions...
+});
+```
+
+## 8. Мониторинг и логирование
+
+### 8.1. Structured Logging
+```typescript
+loggingService.info('Processing', 'Extracted ZIP file', {
+    tempDir: extractionResult.tempDirPath,
+    meetingFoldersFound: extractionResult.meetingFolders.length,
+    zipSize: '15.3MB',
+    extractionTime: '1.2s'
+});
+```
+
+### 8.2. Performance Metrics
+- Memory usage tracking
+- Processing time per phase
+- File size statistics
+- Error rates and recovery success
+
+## 9. Расширяемость архитектуры
+
+### 9.1. Добавление новых сервисов
+1. Создать интерфейс `INewService`
+2. Реализовать сервис `NewService implements INewService`
+3. Добавить в `SERVICE_IDENTIFIERS`
+4. Зарегистрировать в `ServiceConfiguration.configure()`
+
+### 9.2. Новые форматы данных
+- Добавить новые парсеры в `MeetingParsingService`
+- Расширить `ParsedKrispData` интерфейс
+- Обновить `NoteCreator` для новых форматов
+
+### 9.3. Интеграции с внешними системами
+- Создать новые сервисы (например, `CloudStorageService`)
+- Инжектировать через DI систему
+- Не нарушать существующую архитектуру
+
+## 10. Безопасность и валидация
+
+### 10.1. Type Guards для внешних данных
+```typescript
+export function isValidKrispZipFile(filePath: string): boolean;
+export function isValidMeetingNotesContent(content: string): boolean;
+export function isValidTranscriptContent(content: string): boolean;
+```
+
+### 10.2. Sandbox для обработки файлов
+- Все временные файлы создаются в изолированных директориях
+- Automatic cleanup при ошибках
+- Защита от path traversal атак
+
+## Заключение
+
+Новая архитектура v3.4.1+ обеспечивает:
+- ✅ **Модульность**: четкое разделение ответственностей
+- ✅ **Тестируемость**: dependency injection и интерфейсы
+- ✅ **Производительность**: оптимизация для больших файлов
+- ✅ **Надежность**: централизованная обработка ошибок
+- ✅ **Расширяемость**: легко добавлять новые сервисы
+- ✅ **Поддерживаемость**: чистый код и документация

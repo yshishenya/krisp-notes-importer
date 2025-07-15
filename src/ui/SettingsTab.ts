@@ -7,6 +7,7 @@ interface KrispNotesImporterPlugin extends Plugin {
     settingsManager: {
         getSetting: (key: string) => any;
         updateSetting: (key: string, value: any) => Promise<void>;
+        getAllSettings: () => any;
     };
     localizationService?: LocalizationService;
     fileWatcherService?: {
@@ -303,7 +304,7 @@ export class KrispSettingsTab extends PluginSettingTab {
             .addButton(button => button
                 .setButtonText(this.localization.t('settings.buttons.testImport', {fallback: "Select & Import File"}))
                 .onClick(() => {
-                    new TestImportModal(this.app, this.plugin, this.localization).open();
+                    new TestImportModal(this.plugin, this.localization).open();
                 }));
 
         // Кнопка Process All Existing ZIP files (Scan existing files)
@@ -407,12 +408,14 @@ export class KrispSettingsTab extends PluginSettingTab {
 
 // --- Вспомогательные классы для модальных окон ---
 class TestImportModal extends Modal {
-    plugin: KrispNotesImporterPlugin;
-    localization: LocalizationService;
-    filePath: string = '';
+    private plugin: KrispNotesImporterPlugin;
+    private localization: LocalizationService;
+    private filePath: string = '';
+    private inputEl: HTMLInputElement | null = null;
+    private keypressHandler: ((e: KeyboardEvent) => void) | null = null;
 
-    constructor(app: App, plugin: KrispNotesImporterPlugin, localization: LocalizationService) {
-        super(app);
+    constructor(plugin: KrispNotesImporterPlugin, localization: LocalizationService) {
+        super(plugin.app);
         this.plugin = plugin;
         this.localization = localization;
     }
@@ -422,10 +425,10 @@ class TestImportModal extends Modal {
         contentEl.createEl('h2', { text: this.localization.t('modals.manualImport.title', {fallback: "Manual ZIP Import"}) });
         contentEl.createEl('p', { text: this.localization.t('modals.manualImport.desc', {fallback: "Enter the full path to the .zip file you want to import."}) });
 
-        const inputEl = contentEl.createEl('input', { type: 'text', placeholder: '/path/to/your-meeting.zip' });
-        inputEl.style.width = '100%';
-        inputEl.style.marginBottom = '10px';
-        inputEl.addEventListener('change', (e) => this.filePath = (e.target as HTMLInputElement).value.trim());
+        this.inputEl = contentEl.createEl('input', { type: 'text', placeholder: '/path/to/your-meeting.zip' });
+        this.inputEl.style.width = '100%';
+        this.inputEl.style.marginBottom = '10px';
+        this.inputEl.addEventListener('change', (e) => this.filePath = (e.target as HTMLInputElement).value.trim());
 
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
         const importBtn = buttonContainer.createEl('button', { text: this.localization.t('modals.manualImport.buttonImport', {fallback: "Import"}), cls: 'mod-cta' });
@@ -435,7 +438,7 @@ class TestImportModal extends Modal {
                     try {
                         new Notice(this.localization.t('notifications.info.processing', { file: this.filePath.split('/').pop() || this.filePath }), 5000);
                         // Получаем все настройки для передачи в processZipFile
-                        const currentSettings = this.plugin.settingsManager.getSetting('all'); // Убедиться, что getSetting('all') работает
+                        const currentSettings = this.plugin.settingsManager.getAllSettings();
                         await this.plugin.processingService.processZipFile(this.filePath, currentSettings);
                         new Notice(this.localization.t('notifications.success.manualImportComplete', {fallback: 'Manual import complete.'}), 5000);
                     } catch (error: any) {
@@ -453,12 +456,14 @@ class TestImportModal extends Modal {
         buttonContainer.createEl('button', { text: this.localization.t('modals.confirmReset.cancel', {fallback: "Cancel"}) })
             .onclick = () => this.close();
 
-        inputEl.focus();
-         inputEl.addEventListener('keypress', (e: KeyboardEvent) => {
+        this.inputEl.focus();
+         this.keypressHandler = (e: KeyboardEvent) => {
             if (e.key === 'Enter') {
                 importBtn.click();
             }
-        });
+        };
+        this.inputEl.addEventListener('keypress', this.keypressHandler);
+
         // Стили для модального окна
         const styleId = 'krisp-modal-styles'; // Общий ID для стилей модалок
         if (!document.getElementById(styleId)) {
@@ -470,7 +475,12 @@ class TestImportModal extends Modal {
             contentEl.appendChild(styleEl);
         }
     }
-    onClose() { this.contentEl.empty(); }
+    onClose() {
+        this.inputEl?.removeEventListener('keypress', this.keypressHandler as EventListener);
+        this.inputEl = null;
+        this.keypressHandler = null;
+        this.contentEl.empty();
+    }
 }
 
 class LogsModal extends Modal {

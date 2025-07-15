@@ -36,7 +36,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 
 		this.notificationService = new NotificationService();
 		this.statusBarService = new StatusBarService(this);
-		this.processingService = new ProcessingService(this.app, this.statusBarService);
+		this.processingService = new ProcessingService(this.app, this.statusBarService, this.loggingService);
 		this.loggingService.info('Plugin', 'Основные сервисы инициализированы');
 		this.fileWatcherService = new FileWatcherService(
 			this.app,
@@ -64,7 +64,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 						}
 
 						try {
-							await this.processingService.processZipFile(trimmedPath, this.settingsManager.settings);
+							await this.processingService.processZipFile(trimmedPath, this.settingsManager.getAllSettings());
 						} catch (error) {
 							// Ошибки из processZipFile уже должны логироваться и выводить Notice
 							// Дополнительно можно убедиться, что статус Error установлен, если ProcessingService это не сделал
@@ -186,6 +186,7 @@ export default class KrispNotesImporterPlugin extends Plugin {
 
 		if (this.loggingService) {
 			this.loggingService.info('Plugin', 'Выгружаю плагин Krisp Notes Importer');
+			this.loggingService.destroy();
 		}
 
 		console.log('Unloading Krisp Notes Importer plugin.');
@@ -196,6 +197,8 @@ class FilePathModal extends Modal {
 	filePath: string;
 	onSubmitCallback: (filePath: string) => Promise<void>;
 	localization: LocalizationService;
+	private inputEl: HTMLInputElement | null = null; // Сохраняем ссылку для cleanup
+	private keypressHandler: ((e: KeyboardEvent) => void) | null = null; // Сохраняем обработчик
 
 	constructor(app: App, onSubmitCallback: (filePath: string) => Promise<void>, localization: LocalizationService) {
 		super(app);
@@ -218,12 +221,14 @@ class FilePathModal extends Modal {
 					this.filePath = value;
 				});
 				text.inputEl.style.width = '100%';
-				text.inputEl.addEventListener('keypress', (e) => {
+				this.keypressHandler = (e) => {
 					if (e.key === 'Enter') {
 						e.preventDefault();
 						this.submitForm();
 					}
-				});
+				};
+				text.inputEl.addEventListener('keypress', this.keypressHandler);
+				this.inputEl = text.inputEl; // Сохраняем ссылку на input элемент
 			});
 
 		new Setting(contentEl)
@@ -247,5 +252,8 @@ class FilePathModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+		if (this.inputEl) {
+			this.inputEl.removeEventListener('keypress', this.keypressHandler!);
+		}
 	}
 }

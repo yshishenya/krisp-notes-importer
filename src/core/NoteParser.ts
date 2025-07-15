@@ -1,4 +1,8 @@
 import { ParsedKrispData } from '../interfaces';
+import { PERFORMANCE_LIMITS, VALIDATION } from './constants';
+import { promises as fsPromises, createReadStream } from 'fs';
+import { createInterface } from 'readline';
+import { StreamingOptions } from './serviceInterfaces';
 
 export class NoteParser {
 
@@ -7,10 +11,27 @@ export class NoteParser {
     /**
      * Извлекает основные данные из содержимого meeting_notes.txt и имени папки встречи.
      * @param notesContent Содержимое файла meeting_notes.txt.
+     * @param transcriptContent Содержимое файла transcript.txt.
      * @param meetingFolderName Имя папки встречи (например, 'Название встречи_UUID').
      * @returns Объект ParsedKrispData с извлеченными данными.
      */
     public parseMeetingNotes(notesContent: string, transcriptContent: string, meetingFolderName: string): ParsedKrispData {
+        // Валидация входных данных
+        if (typeof notesContent !== 'string') {
+            console.warn('[NoteParser] notesContent is not a string, using empty string');
+            notesContent = '';
+        }
+
+        if (typeof transcriptContent !== 'string') {
+            console.warn('[NoteParser] transcriptContent is not a string, using empty string');
+            transcriptContent = '';
+        }
+
+        if (!meetingFolderName || typeof meetingFolderName !== 'string') {
+            console.warn('[NoteParser] meetingFolderName is invalid, using default name');
+            meetingFolderName = 'Unknown Meeting';
+        }
+
         const parsedData: ParsedKrispData = {};
 
         // Извлечение названия встречи из имени папки (удаляя UUID)
@@ -23,7 +44,7 @@ export class NoteParser {
         title = title.replace(/\s*\([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\)$/, '');
 
         // Удаляем UUID в конце после дефиса (32 символа hex без дефисов)
-        title = title.replace(/-[0-9a-fA-F]{32}$/, '');
+        title = title.replace(new RegExp(`-[0-9a-fA-F]{${VALIDATION.MIN_UUID_LENGTH}}$`), '');
 
         // Затем удалим стандартный суффикс Krisp с датой и временем, если он есть, чтобы получить чистое название
         // Обновленный regex для случаев типа " - May, 22" или " - July 11, 2024" или " - July 11, 2024 1105 AM"
@@ -85,6 +106,174 @@ export class NoteParser {
         parsedData.tags = [...(parsedData.smartTags || [])];
 
         return parsedData;
+    }
+
+    /**
+     * Парсит большой транскрипт файл с использованием стриминга
+     * Оптимизированная версия для файлов >100MB
+     */
+    async parseTranscriptStreaming(filePath: string, options?: StreamingOptions): Promise<{ participants: string[], formattedTranscript: string, duration: string }> {
+        const chunkSize = options?.chunkSize || PERFORMANCE_LIMITS.LARGE_FILE_CHUNK_SIZE;
+        const maxMemoryUsage = options?.maxMemoryUsage || (PERFORMANCE_LIMITS.MAX_TRANSCRIPT_MEMORY_MB * 1024 * 1024);
+
+        return new Promise((resolve, reject) => {
+            const participants = new Set<string>();
+            const formattedLines: string[] = [];
+            let lastTimestamp = "00:00:00";
+            let totalMemoryUsed = 0;
+            let processedLines = 0;
+
+            const fileStream = createReadStream(filePath, { encoding: 'utf8', highWaterMark: chunkSize });
+            const rl = createInterface({
+                input: fileStream,
+                crlfDelay: Infinity
+            });
+
+            const speakerTimeRegex = /^(.+?)\s*\|\s*(\d{2}:\d{2}(?::\d{2})?)$/;
+            let currentSpeaker = '';
+            let currentSpeakerText: string[] = [];
+
+            rl.on('line', (line) => {
+                const trimmedLine = line.trim();
+                if (trimmedLine === '') return;
+
+                // Проверяем лимит памяти
+                const lineSize = Buffer.byteLength(trimmedLine, 'utf8');
+                if (totalMemoryUsed + lineSize > maxMemoryUsage) {
+                    console.warn(`[NoteParser] Streaming stopped at ${Math.round(totalMemoryUsed / 1024 / 1024)}MB memory limit`);
+                    rl.close();
+                    return;
+                }
+
+                processedLines++;
+                totalMemoryUsed += lineSize;
+
+                // Прогресс-репорт
+                if (options?.progressCallback && processedLines % 1000 === 0) {
+                    const progressMB = Math.round(totalMemoryUsed / 1024 / 1024);
+                    options.progressCallback(progressMB);
+                }
+
+                const speakerTimeMatch = trimmedLine.match(speakerTimeRegex);
+                if (speakerTimeMatch) {
+                    // Завершаем предыдущего спикера
+                    if (currentSpeaker && currentSpeakerText.length > 0) {
+                        const formattedText = currentSpeakerText.join('\n');
+                        formattedLines.push(`[[${lastTimestamp}]] **${currentSpeaker}**: ${formattedText}`);
+                        currentSpeakerText = [];
+                    }
+
+                    // Новый спикер
+                    currentSpeaker = speakerTimeMatch[1].trim();
+                    const timestamp = speakerTimeMatch[2];
+
+                    if (currentSpeaker && !currentSpeaker.toLowerCase().includes('transcription service')) {
+                        participants.add(currentSpeaker);
+                    }
+
+                    const linkTimestamp = timestamp.length === 5 ? `${timestamp}:00` : timestamp;
+                    lastTimestamp = linkTimestamp;
+                } else if (currentSpeaker) {
+                    // Текст текущего спикера
+                    if (trimmedLine.toLowerCase() === 'продолжение следует...') {
+                        currentSpeakerText.push(`_${trimmedLine}_`);
+                    } else {
+                        currentSpeakerText.push(trimmedLine);
+                    }
+                } else {
+                    // Строка без спикера в начале
+                    formattedLines.push(trimmedLine);
+                }
+            });
+
+            rl.on('close', () => {
+                // Завершаем последнего спикера
+                if (currentSpeaker && currentSpeakerText.length > 0) {
+                    const formattedText = currentSpeakerText.join('\n');
+                    formattedLines.push(`[[${lastTimestamp}]] **${currentSpeaker}**: ${formattedText}`);
+                }
+
+                let duration = "N/A";
+                if (lastTimestamp !== "00:00:00") {
+                    duration = lastTimestamp;
+                }
+
+                console.log(`[NoteParser] Streaming completed: ${processedLines} lines, ${Math.round(totalMemoryUsed / 1024 / 1024)}MB processed`);
+
+                resolve({
+                    participants: Array.from(participants),
+                    formattedTranscript: formattedLines.join('\n\n'),
+                    duration: duration
+                });
+            });
+
+            rl.on('error', (error) => {
+                reject(new Error(`Failed to stream transcript: ${error.message}`));
+            });
+
+            fileStream.on('error', (error) => {
+                reject(new Error(`Failed to read transcript file: ${error.message}`));
+            });
+        });
+    }
+
+    /**
+     * Читает большой файл частями, ограничивая использование памяти
+     */
+    async parseLargeFileContent(filePath: string, maxSizeBytes: number): Promise<string> {
+        try {
+            const stats = await fsPromises.stat(filePath);
+
+            if (stats.size <= maxSizeBytes) {
+                // Файл помещается в лимит, читаем целиком
+                return await fsPromises.readFile(filePath, 'utf-8');
+            }
+
+            // Файл слишком большой, читаем частями
+            console.warn(`[NoteParser] File ${filePath} is too large (${Math.round(stats.size / 1024 / 1024)}MB), reading first ${Math.round(maxSizeBytes / 1024 / 1024)}MB`);
+
+            return new Promise((resolve, reject) => {
+                const chunks: string[] = [];
+                let totalSize = 0;
+
+                const fileStream = createReadStream(filePath, {
+                    encoding: 'utf8',
+                    highWaterMark: PERFORMANCE_LIMITS.STREAMING_BUFFER_SIZE
+                });
+
+                fileStream.on('data', (chunk: string) => {
+                    const chunkSize = Buffer.byteLength(chunk, 'utf8');
+
+                    if (totalSize + chunkSize > maxSizeBytes) {
+                        // Обрезаем последний chunk
+                        const remainingBytes = maxSizeBytes - totalSize;
+                        if (remainingBytes > 0) {
+                            const truncatedChunk = chunk.substring(0, Math.floor(chunk.length * remainingBytes / chunkSize));
+                            chunks.push(truncatedChunk);
+                        }
+                        fileStream.destroy(); // Останавливаем чтение
+                        return;
+                    }
+
+                    chunks.push(chunk);
+                    totalSize += chunkSize;
+                });
+
+                fileStream.on('end', () => {
+                    resolve(chunks.join(''));
+                });
+
+                fileStream.on('close', () => {
+                    resolve(chunks.join(''));
+                });
+
+                fileStream.on('error', (error) => {
+                    reject(new Error(`Failed to read large file: ${error.message}`));
+                });
+            });
+        } catch (error) {
+            throw new Error(`Failed to parse large file ${filePath}: ${error.message}`);
+        }
     }
 
     /**
@@ -461,9 +650,8 @@ export class NoteParser {
     private extractEntities(notesContent: string, transcriptContent: string): string[] {
         const entities: string[] = [];
 
-        // Ограничиваем размер текста для анализа (первые 5000 символов)
-        const maxTextLength = 5000;
-        const fullText = `${notesContent} ${transcriptContent}`.substring(0, maxTextLength);
+        // Ограничиваем размер текста для анализа
+        const fullText = `${notesContent} ${transcriptContent}`.substring(0, PERFORMANCE_LIMITS.ENTITIES_TEXT_LIMIT);
 
         // Предкомпилированные регулярные выражения для лучшей производительности
         const patterns = {
@@ -476,7 +664,7 @@ export class NoteParser {
         const projectMatches = fullText.match(patterns.projects);
         if (projectMatches && projectMatches.length > 0) {
             entities.push('### 🚀 Упомянутые проекты', '');
-            const uniqueProjects = [...new Set(projectMatches.slice(0, 5))];
+            const uniqueProjects = [...new Set(projectMatches.slice(0, PERFORMANCE_LIMITS.MAX_PROJECTS_ENTITIES))];
             uniqueProjects.forEach(project => entities.push(`- ${project.trim()}`));
             entities.push('');
         }
@@ -485,7 +673,7 @@ export class NoteParser {
         const companyMatches = fullText.match(patterns.companies);
         if (companyMatches && companyMatches.length > 0) {
             entities.push('### 🏢 Упомянутые компании', '');
-            const uniqueCompanies = [...new Set(companyMatches.slice(0, 5))];
+            const uniqueCompanies = [...new Set(companyMatches.slice(0, PERFORMANCE_LIMITS.MAX_COMPANIES_ENTITIES))];
             uniqueCompanies.forEach(company => entities.push(`- ${company.trim()}`));
             entities.push('');
         }
@@ -494,7 +682,7 @@ export class NoteParser {
         const dateMatches = fullText.match(patterns.dates);
         if (dateMatches && dateMatches.length > 0) {
             entities.push('### 📅 Упомянутые даты', '');
-            const uniqueDates = [...new Set(dateMatches.slice(0, 5))];
+            const uniqueDates = [...new Set(dateMatches.slice(0, PERFORMANCE_LIMITS.MAX_DATES_ENTITIES))];
             uniqueDates.forEach(date => entities.push(`- ${date}`));
             entities.push('');
         }
@@ -530,10 +718,15 @@ export class NoteParser {
 
     /**
      * Генерирует умные теги на основе содержимого
+     * Оптимизированная версия с ограничением размера текста
      */
     private generateSmartTags(notesContent: string, transcriptContent: string, title: string): string[] {
         const tags = new Set<string>();
-        const fullText = `${notesContent} ${transcriptContent} ${title}`.toLowerCase();
+
+        // Ограничиваем размер текста для анализа
+        const fullText = `${notesContent} ${transcriptContent} ${title}`
+            .toLowerCase()
+            .substring(0, PERFORMANCE_LIMITS.SMART_TAGS_TEXT_LIMIT);
 
         // Базовые теги
         tags.add('meeting');

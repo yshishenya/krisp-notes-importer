@@ -1,4 +1,6 @@
-import { Plugin, setIcon } from 'obsidian';
+import { App, Plugin, setIcon } from 'obsidian';
+import { LocalizationService } from './LocalizationService';
+import { NOTIFICATION_DURATIONS } from './constants';
 
 export enum PluginStatus {
     IDLE = 'idle',
@@ -172,9 +174,11 @@ export class StatusBarService {
     }
 
     /**
-     * Временное отображение сообщения
+     * Показывает временное сообщение в статус баре
+     * @param message Сообщение для отображения
+     * @param duration Длительность отображения в миллисекундах
      */
-    showTemporaryMessage(message: string, duration: number = 3000): void {
+    showTemporaryMessage(message: string, duration: number = NOTIFICATION_DURATIONS.TEMPORARY_STATUS): void {
         const originalStatus = this.currentStatus;
         const originalMessage = this.currentMessage;
 
