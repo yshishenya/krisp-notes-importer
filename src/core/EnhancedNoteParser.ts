@@ -51,8 +51,7 @@ export class EnhancedNoteParser {
     constructor() {}
 
     /**
-     * Основной метод парсинга с оптимизированной производительностью
-     * Выполняет все вычисления за один проход по данным
+     * Parses meeting notes and transcript to generate structured data with analytics.
      */
     public parseWithAnalytics(
         notesContent: string,
@@ -119,7 +118,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Нормализация и валидация входных данных
+     * Trims and validates input strings, providing default values if necessary.
      */
     private normalizeInputData(notesContent: string, transcriptContent: string, meetingFolderName: string) {
         return {
@@ -130,8 +129,13 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Единый проход по транскрипту для всех вычислений
-     * Это главная оптимизация - вместо 3-4 проходов делаем только один
+     * Performs a single pass analysis on transcript content to gather meeting analytics.
+     *
+     * This function processes each line of the transcript to track participant statistics, count questions and decisions,
+     * and analyze sentiment. It caches the results to avoid redundant computations for the same transcript content.
+     *
+     * @param transcriptContent - The raw string content of the transcript.
+     * @returns A MeetingAnalytics object containing various metrics about the meeting.
      */
     private performSinglePassAnalysis(transcriptContent: string): MeetingAnalytics {
         const cacheKey = this.getCacheKey(transcriptContent);
@@ -220,7 +224,14 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Кэшированный подсчет слов с оптимизацией
+     * Кэшированный подсчет количества слов в тексте с оптимизацией.
+     *
+     * Функция проверяет наличие ключа кеша для переданного текста и, если он существует,
+     * возвращает сохраненное значение. Если ключ отсутствует, выполняется оптимизированный
+     * подсчет слов: текст очищается от пунктуации, разделяется на слова по пробелам,
+     * и фильтруются пустые строки. Результат сохраняется в кеш.
+     *
+     * @param text - Текст для подсчета количества слов.
      */
     private getCachedWordCount(text: string): number {
         const cacheKey = this.getCacheKey(text);
@@ -239,8 +250,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Умное определение самого вовлеченного участника
-     * Учитывает не только количество слов, но и частоту выступлений
+     * Determines the most engaged participant based on engagement score.
      */
     private findMostEngagedSpeaker(participantStats: Map<string, ParticipantStats>): string {
         let maxEngagement = 0;
@@ -257,7 +267,11 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Вычисление финальной статистики участников
+     * Calculates final statistics for participants.
+     *
+     * This function computes the total number of words across all participants and then calculates
+     * individual statistics including average segment length and engagement score for each participant.
+     * The engagement score is determined based on word ratio, segment consistency, and segment count.
      */
     private calculateFinalStats(participantStats: Map<string, ParticipantStats>): void {
         const totalWords = Array.from(participantStats.values())
@@ -278,7 +292,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Простой анализ тональности текста (0-10 шкала)
+     * Calculates sentiment score based on positive and negative word counts in text.
      */
     private calculateSentiment(text: string): number {
         const positiveWords = /(?:хорошо|отлично|согласен|правильно|успешно|получилось|классно|супер)/gi;
@@ -291,7 +305,16 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Определение типа встречи на основе содержимого
+     * Determine the type of meeting based on content and counts of questions and decisions.
+     *
+     * This function analyzes the content of a meeting to determine its type. It checks for specific keywords like 'ретро', 'планерка', and 'презентация'.
+     * If no keyword matches, it uses the counts of questions and decisions to classify the meeting as either 'принятие решений' or 'обсуждение'.
+     * If none of these conditions are met, it defaults to 'рабочая встреча'.
+     *
+     * @param content - The content of the meeting.
+     * @param questionCount - The number of questions raised during the meeting.
+     * @param decisionCount - The number of decisions made during the meeting.
+     * @returns A string representing the type of meeting.
      */
     private determineMeetingType(content: string, questionCount: number, decisionCount: number): string {
         const lowerContent = content.toLowerCase();
@@ -316,7 +339,14 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Категоризация тональности
+     * Determines the sentiment category based on a score.
+     *
+     * This function categorizes the sentiment into 'positive', 'neutral', or 'negative'
+     * based on the provided score. A score greater than 6 is considered positive,
+     * a score less than 4 is considered negative, and any score between 4 and 6
+     * (inclusive) is considered neutral.
+     *
+     * @param score - The sentiment score to categorize.
      */
     private categorizeSentiment(score: number): 'positive' | 'neutral' | 'negative' {
         if (score > 6) return 'positive';
@@ -325,7 +355,16 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Расчет уровня энергии встречи
+     * Calculates the energy level of a meeting based on participant statistics and total segments.
+     *
+     * This function computes the average number of segments per participant and categorizes
+     * the energy level as 'high', 'medium', or 'low' based on predefined thresholds.
+     * The calculation involves dividing the total number of segments by the number of participants.
+     * If the average exceeds 15, the energy level is considered high. If it exceeds 8 but is less than
+     * or equal to 15, it is medium. Otherwise, it is low.
+     *
+     * @param participantStats - A map containing statistics for each participant.
+     * @param totalSegments - The total number of segments in the meeting.
      */
     private calculateEnergyLevel(
         participantStats: Map<string, ParticipantStats>,
@@ -339,7 +378,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Проверка валидности спикера
+     * Validates if a speaker name is valid based on specific patterns and length constraints.
      */
     private isValidSpeaker(speaker: string): boolean {
         const invalidPatterns = [
@@ -355,7 +394,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Генерация ключа для кэширования
+     * Generates a cache key based on input text length and first 50 characters without spaces.
      */
     private getCacheKey(text: string): string {
         // Простой хэш для ключа кэша
@@ -363,7 +402,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Форматирование статистики участников
+     * Formats participant statistics into a sorted array of strings.
      */
     private formatParticipantStats(participantStats: Map<string, ParticipantStats>): string[] {
         const stats: string[] = [];
@@ -386,7 +425,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Парсинг содержимого заметок встречи
+     * Parses the content of meeting notes into structured sections.
      */
     private parseNotesContent(notesContent: string) {
         return {
@@ -397,7 +436,14 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Извлечение метаданных встречи
+     * Extracts metadata from a meeting's notes content and folder name.
+     *
+     * The function processes the meeting folder name to remove UUIDs and timestamps,
+     * then extracts the title by trimming irrelevant parts. It also attempts to smartly extract
+     * the date and time from the first line of the notes or the folder name itself.
+     *
+     * @param notesContent - The content of the meeting notes as a string.
+     * @param meetingFolderName - The name of the meeting folder as a string.
      */
     private extractMetadata(notesContent: string, meetingFolderName: string) {
         // Очистка названия от UUID и временных меток
@@ -415,7 +461,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Улучшенное извлечение даты с поддержкой множественных форматов
+     * Extracts date from text using predefined regex patterns and normalizes it.
      */
     private extractDateSmart(text: string): string | null {
         for (const regex of EnhancedNoteParser.REGEX_CACHE.dateFormats) {
@@ -430,7 +476,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Улучшенное извлечение времени
+     * Extracts time from text using cached regex patterns and normalizes it.
      */
     private extractTimeSmart(text: string): string | null {
         for (const regex of EnhancedNoteParser.REGEX_CACHE.timeFormats) {
@@ -443,7 +489,7 @@ export class EnhancedNoteParser {
     }
 
     /**
-     * Генерация расширенной аналитики
+     * Generates enhanced analytics from meeting data.
      */
     private generateEnhancedAnalytics(analytics: MeetingAnalytics, data: any) {
         return {
@@ -454,36 +500,57 @@ export class EnhancedNoteParser {
     }
 
     // Заглушки для методов, которые нужно будет реализовать
+    /**
+     * Extracts a specified section from the given content.
+     */
     private extractSection(content: string, section: string, asList?: boolean): string[] {
         // Реализация извлечения секций из meeting_notes.txt
         return [];
     }
 
+    /**
+     * Normalizes a date match to the format YYYY-MM-DD.
+     */
     private normalizeDate(match: RegExpMatchArray): string | null {
         // Нормализация даты в формат YYYY-MM-DD
         return null;
     }
 
+    /**
+     * Normalizes time to the format HH:MM.
+     */
     private normalizeTime(match: RegExpMatchArray): string | null {
         // Нормализация времени в формат HH:MM
         return null;
     }
 
+    /**
+     * Formats a transcript based on provided statistics.
+     */
     private formatTranscript(content: string, stats: Map<string, ParticipantStats>): string {
         // Форматирование транскрипта с учетом статистики
         return content;
     }
 
+    /**
+     * Extracts entities from combined notes and transcript content.
+     */
     private extractEntitiesEnhanced(notesContent: string, transcriptContent: string): string[] {
         // Улучшенное извлечение сущностей
         return [];
     }
 
+    /**
+     * Generates smart tags based on meeting analytics.
+     */
     private generateSmartTagsEnhanced(analytics: MeetingAnalytics, data: any): string[] {
         // Генерация умных тегов на основе аналитики
         return ['meeting', 'krisp', analytics.meetingType, analytics.sentiment];
     }
 
+    /**
+     * Generates related links based on notes content and analytics.
+     */
     private generateRelatedLinksEnhanced(notesContent: string, analytics: MeetingAnalytics): string[] {
         // Генерация связанных ссылок с учетом аналитики
         return [];
