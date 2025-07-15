@@ -312,7 +312,9 @@ export class FileWatcherService {
             console.log(`[FileWatcher] Processing new ZIP file: ${zipFilePath}`);
             console.log(`[FileWatcher] Settings - deleteZipAfterImport: ${settings.deleteZipAfterImport}`);
 
-            this.notificationService.showInfo(`Обнаружен новый файл: ${path.basename(zipFilePath)}`);
+            // Убираем уведомление для автоматического обнаружения - оно будет спамом
+            // Пользователь увидит активность в status bar
+            // this.notificationService.showInfo(`Обнаружен новый файл: ${path.basename(zipFilePath)}`);
 
             // Обрабатываем файл через ProcessingService
             await this.processingService.processZipFile(zipFilePath, settings);
@@ -327,19 +329,12 @@ export class FileWatcherService {
      * Сканировать папку на предмет существующих ZIP-файлов
      */
     async scanExistingFiles(): Promise<void> {
-        if (!this.isWatching || !this.watchedPath) {
-            // Если сканирование вызвано, когда отслеживание неактивно (например, через команду, а папка не указана)
-            // Уведомляем пользователя и выходим
+        if (!this.watchedPath) {
             this.notificationService.showError("Отслеживаемая папка не настроена или отслеживание неактивно. Невозможно сканировать.");
-            if (this.statusBarService) {
-                this.statusBarService.setIdle("Сканирование невозможно");
-            }
             return;
         }
 
-        const initialStatusWasWatching = this.isWatching;
-        const initialWatchedPath = this.watchedPath;
-
+        // Устанавливаем статус "Processing" при начале сканирования
         if (this.statusBarService) {
             this.statusBarService.setProcessing("Сканирование существующих файлов...");
         }
@@ -353,13 +348,30 @@ export class FileWatcherService {
                 return;
             }
 
-            this.notificationService.showInfo(`Найдено ${zipFiles.length} ZIP-файлов для обработки`);
+            // Включаем batch режим для множественных файлов
+            const isMultipleFiles = zipFiles.length > 1;
+            if (isMultipleFiles) {
+                this.notificationService.startBatchOperation(`массовое сканирование: ${zipFiles.length} файлов`);
+                this.notificationService.showBatchProgress(`Начинаем сканирование ${zipFiles.length} ZIP-файлов...`, 3000);
+            } else {
+                this.notificationService.showInfo(`Найден 1 ZIP-файл для обработки`);
+            }
 
             let processed = 0;
             let errors = 0;
 
-            for (const zipFile of zipFiles) {
+            for (let i = 0; i < zipFiles.length; i++) {
+                const zipFile = zipFiles[i];
+
                 try {
+                    // Обновляем статус и batch прогресс
+                    if (isMultipleFiles) {
+                        if (this.statusBarService) {
+                            this.statusBarService.setProcessing(`Сканирование ${i + 1}/${zipFiles.length}: ${zipFile.substring(0, 20)}...`);
+                        }
+                        this.notificationService.showBatchProgress(`Обработка файла ${i + 1}/${zipFiles.length}: ${zipFile}`, 2000);
+                    }
+
                     const fullPath = path.join(this.watchedPath, zipFile);
 
                     // Получаем актуальные настройки из плагина
@@ -373,7 +385,12 @@ export class FileWatcherService {
                 }
             }
 
-            this.notificationService.showBatchImportResult(processed, errors, 0, 'массовое сканирование');
+            // Завершаем batch операцию и показываем результат
+            if (isMultipleFiles) {
+                this.notificationService.endBatchOperation();
+                this.notificationService.showBatchImportResult(processed, errors, 0, 'массовое сканирование');
+                this.notificationService.logDetailedResult(processed, errors, 0, 'массовое сканирование');
+            }
 
         } catch (error) {
             console.error('[Krisp Importer] Error scanning existing files:', error);
@@ -382,10 +399,10 @@ export class FileWatcherService {
                 this.statusBarService.setError("Ошибка сканирования");
             }
         } finally {
+            // Восстанавливаем статус после обработки файлов
             if (this.statusBarService) {
-                if (initialStatusWasWatching && initialWatchedPath) {
-                    // Возвращаем статус к отслеживанию, если он был таким до сканирования
-                    this.statusBarService.setWatching(initialWatchedPath);
+                if (this.isWatching && this.watchedPath) {
+                    this.statusBarService.setWatching(this.watchedPath);
                 } else {
                     this.statusBarService.setIdle("Сканирование завершено");
                 }

@@ -2,22 +2,71 @@ import { Notice } from 'obsidian';
 import { NOTIFICATION_DURATIONS } from './constants';
 
 export class NotificationService {
+    private batchMode: boolean = false;
+    private currentOperationId: string | null = null;
+    private progressNotice: Notice | null = null;
+
     constructor() {}
 
     /**
-     * Показывает уведомление об успехе
-     * @param message Сообщение для отображения
-     * @param duration Длительность в миллисекундах
+     * Включает batch режим для массовых операций
+     */
+    startBatchOperation(operationId: string): void {
+        this.batchMode = true;
+        this.currentOperationId = operationId;
+        this.hidePreviousNotices();
+    }
+
+    /**
+     * Выключает batch режим
+     */
+    endBatchOperation(): void {
+        this.batchMode = false;
+        this.currentOperationId = null;
+        if (this.progressNotice) {
+            this.progressNotice.hide();
+            this.progressNotice = null;
+        }
+    }
+
+    /**
+     * Показывает прогресс для массовых операций
+     */
+    showBatchProgress(message: string, hideAfter: number = 0): void {
+        if (this.batchMode) {
+            if (this.progressNotice) {
+                this.progressNotice.hide();
+            }
+            this.progressNotice = new Notice(message, hideAfter);
+        }
+    }
+
+    /**
+     * Скрывает предыдущие уведомления
+     */
+    private hidePreviousNotices(): void {
+        if (this.progressNotice) {
+            this.progressNotice.hide();
+            this.progressNotice = null;
+        }
+    }
+
+    /**
+     * Показывает уведомление об успехе (с учетом batch режима)
      */
     showSuccess(message: string, duration: number = NOTIFICATION_DURATIONS.SUCCESS): void {
+        // В batch режиме не показываем индивидуальные success уведомления
+        if (this.batchMode && this.isIndividualItemMessage(message)) {
+            console.log(`[Krisp Importer] SUCCESS (batch): ${message}`);
+            return;
+        }
+
         new Notice(message, duration);
         console.log(`[Krisp Importer] SUCCESS: ${message}`);
     }
 
     /**
      * Показывает уведомление об ошибке
-     * @param message Сообщение для отображения
-     * @param duration Длительность в миллисекундах
      */
     showError(message: string, duration: number = NOTIFICATION_DURATIONS.ERROR): void {
         new Notice(`ERROR: ${message}`, duration);
@@ -26,8 +75,6 @@ export class NotificationService {
 
     /**
      * Показывает предупреждение
-     * @param message Сообщение для отображения
-     * @param duration Длительность в миллисекундах
      */
     showWarning(message: string, duration: number = NOTIFICATION_DURATIONS.WARNING): void {
         new Notice(`WARNING: ${message}`, duration);
@@ -35,49 +82,105 @@ export class NotificationService {
     }
 
     /**
-     * Показывает информационное уведомление
-     * @param message Сообщение для отображения
-     * @param duration Длительность в миллисекундах
+     * Показывает информационное уведомление (с учетом batch режима)
      */
     showInfo(message: string, duration: number = NOTIFICATION_DURATIONS.INFO): void {
+        // В batch режиме не показываем прогресс для отдельных элементов
+        if (this.batchMode && this.isIndividualProgressMessage(message)) {
+            console.log(`[Krisp Importer] INFO (batch): ${message}`);
+            return;
+        }
+
         new Notice(message, duration);
         console.log(`[Krisp Importer] INFO: ${message}`);
     }
 
     /**
-     * Показывает уведомление о дубликате с действием
-     * @param fileName Имя файла дубликата
-     * @param strategy Примененная стратегия
-     * @param action Выполненное действие
+     * Принудительно показывает уведомление (игнорируя batch режим)
      */
-    showDuplicateFound(fileName: string, strategy: string, action: string): void {
-        const message = `Дубликат "${fileName}": ${action} (стратегия: ${strategy})`;
-        this.showWarning(message);
+    forceNotification(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info', duration?: number): void {
+        switch (type) {
+            case 'success':
+                new Notice(message, duration || NOTIFICATION_DURATIONS.SUCCESS);
+                break;
+            case 'error':
+                new Notice(`ERROR: ${message}`, duration || NOTIFICATION_DURATIONS.ERROR);
+                break;
+            case 'warning':
+                new Notice(`WARNING: ${message}`, duration || NOTIFICATION_DURATIONS.WARNING);
+                break;
+            default:
+                new Notice(message, duration || NOTIFICATION_DURATIONS.INFO);
+        }
+        console.log(`[Krisp Importer] FORCE ${type.toUpperCase()}: ${message}`);
     }
 
     /**
-     * Показывает уведомление о статусе массового импорта
-     * @param imported Количество импортированных встреч
-     * @param errors Количество ошибок
-     * @param skipped Количество пропущенных дубликатов
-     * @param zipFileName Имя ZIP-файла
+     * Проверяет, является ли сообщение прогрессом для отдельного элемента
      */
-    showBatchImportResult(imported: number, errors: number, skipped: number, zipFileName: string): void {
-        if (imported > 0 && errors === 0) {
-            this.showSuccess(`Импорт завершен: ${imported} встреч(и) из "${zipFileName}"`, NOTIFICATION_DURATIONS.SUCCESS);
-        } else if (imported > 0 && errors > 0) {
-            this.showWarning(`Импорт завершен частично: ${imported} успешно, ${errors} ошибок из "${zipFileName}"`, NOTIFICATION_DURATIONS.WARNING);
-        } else if (errors > 0) {
-            this.showError(`Импорт не удался: ${errors} ошибок в "${zipFileName}"`, NOTIFICATION_DURATIONS.ERROR);
+    private isIndividualProgressMessage(message: string): boolean {
+        return message.includes('Processing meeting') ||
+               message.includes('Создаем заметку') ||
+               message.includes('Attempting to use alternative');
+    }
+
+    /**
+     * Проверяет, является ли сообщение успехом для отдельного элемента
+     */
+    private isIndividualItemMessage(message: string): boolean {
+        return message.includes('Successfully imported meeting') ||
+               message.includes('Audio file created') ||
+               message.includes('Audio file updated');
+    }
+
+    /**
+     * Показывает сводное уведомление о результатах массового импорта
+     */
+    showBatchImportResult(imported: number, errors: number, skipped: number, operationName: string): void {
+        let message: string;
+        let type: 'success' | 'warning' | 'error' | 'info';
+        let duration: number;
+
+        if (errors === 0 && imported > 0) {
+            // Полный успех
+            type = 'success';
+            message = `✅ Импорт завершен: ${imported} встреч(и) из "${operationName}"`;
+            duration = NOTIFICATION_DURATIONS.SUCCESS;
+        } else if (errors > 0 && imported > 0) {
+            // Частичный успех
+            type = 'warning';
+            message = `⚠️ Импорт завершен частично: ${imported} успешно, ${errors} ошибок из "${operationName}"`;
+            duration = NOTIFICATION_DURATIONS.WARNING + 2000; // Дольше для важной информации
+        } else if (errors > 0 && imported === 0) {
+            // Полная неудача
+            type = 'error';
+            message = `❌ Импорт не удался: ${errors} ошибок в "${operationName}"`;
+            duration = NOTIFICATION_DURATIONS.ERROR + 3000; // Еще дольше для ошибок
         } else {
-            this.showInfo(`Нет данных для импорта в "${zipFileName}"`, NOTIFICATION_DURATIONS.INFO);
+            // Нет данных
+            type = 'info';
+            message = `ℹ️ Нет данных для импорта в "${operationName}"`;
+            duration = NOTIFICATION_DURATIONS.INFO;
         }
 
         if (skipped > 0) {
-            this.showInfo(`Пропущено дубликатов: ${skipped}`, NOTIFICATION_DURATIONS.INFO);
+            message += ` (пропущено дубликатов: ${skipped})`;
         }
+
+        // Принудительно показываем результат
+        this.forceNotification(message, type, duration);
     }
 
-    // Можно добавить больше методов по мере необходимости,
-    // например, для интерактивных уведомлений или различных уровней детализации.
+    /**
+     * Показывает детальный результат импорта (для отладки/логов)
+     */
+    logDetailedResult(imported: number, errors: number, skipped: number, operationName: string): void {
+        console.log(`[Krisp Importer] DETAILED RESULT for "${operationName}":`, {
+            imported,
+            errors,
+            skipped,
+            total: imported + errors,
+            successRate: imported + errors > 0 ? Math.round((imported / (imported + errors)) * 100) : 0
+        });
+    }
 }

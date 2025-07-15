@@ -156,6 +156,13 @@ export class ProcessingService {
         let errorCount = 0;
         let lastCreatedNote: { notePath?: string, audioDestPath?: string, noteFile?: TFile } | null = null;
 
+        const isMultipleMeetings = meetingFolders.length > 1;
+
+        // Включаем batch режим для множественных встреч
+        if (isMultipleMeetings) {
+            this.notificationService.startBatchOperation(zipFileName);
+        }
+
         // LOGGING: Начало обработки встреч
         if (this.loggingService) {
             this.loggingService.info('Processing', `Starting processing of ${meetingFolders.length} meeting folders from ${zipFileName}`);
@@ -175,11 +182,19 @@ export class ProcessingService {
             try {
                 // ERROR BOUNDARY: Обработка каждой встречи с полным логированием
 
-                // Показываем прогресс для множественных встреч
-                const progressMessage = meetingFolders.length > 1
-                    ? `Processing meeting ${i + 1}/${meetingFolders.length}: ${meetingFolderName}...`
-                    : `Processing meeting: ${meetingFolderName}...`;
-                new Notice(progressMessage);
+                // Обновляем статус в StatusBar для множественных встреч
+                if (isMultipleMeetings && this.statusBarService) {
+                    this.statusBarService.setProcessing(`${i + 1}/${meetingFolders.length}: ${meetingFolderName.substring(0, 20)}...`);
+                }
+
+                // Показываем batch прогресс вместо отдельных уведомлений
+                if (isMultipleMeetings) {
+                    this.notificationService.showBatchProgress(`Обработка встречи ${i + 1}/${meetingFolders.length}: ${meetingFolderName}`, 2000);
+                } else {
+                    // Для одной встречи показываем обычное уведомление
+                    const progressMessage = `Processing meeting: ${meetingFolderName}...`;
+                    new Notice(progressMessage);
+                }
 
                 const notesTxtFilename = KRISP_FILE_NAMES.MEETING_NOTES;
                 const transcriptTxtFilename = KRISP_FILE_NAMES.TRANSCRIPT;
@@ -345,7 +360,10 @@ export class ProcessingService {
             // Аудиофайл теперь создается в NoteCreator.createNote()
             // Удалена дублированная логика обработки аудио
 
-            this.notificationService.showSuccess(`Successfully imported meeting ${meetingFolderName} to ${creationResult.notePath}`);
+            // В batch режиме убираем индивидуальные success уведомления
+            if (!isMultipleMeetings) {
+                this.notificationService.showSuccess(`Successfully imported meeting ${meetingFolderName} to ${creationResult.notePath}`);
+            }
             importedCount++;
 
             } catch (unexpectedError) {
@@ -369,6 +387,13 @@ export class ProcessingService {
             }
         } // Конец цикла по папкам встреч
 
+        // Завершаем batch операцию и показываем итоговый результат
+        if (isMultipleMeetings) {
+            this.notificationService.endBatchOperation();
+            this.notificationService.showBatchImportResult(importedCount, errorCount, 0, zipFileName);
+            this.notificationService.logDetailedResult(importedCount, errorCount, 0, zipFileName);
+        }
+
         return { importedCount, errorCount, lastCreatedNote };
     }
 
@@ -386,8 +411,6 @@ export class ProcessingService {
         if (this.statusBarService && processingResult.errorCount > 0) {
             this.statusBarService.setError(`Ошибок: ${processingResult.errorCount}`);
         }
-
-        this.notificationService.showBatchImportResult(processingResult.importedCount, processingResult.errorCount, 0, zipFileName);
 
         // Проверяем настройку удаления ZIP-файла
         console.log(`[DEBUG] deleteZipAfterImport setting: ${settings.deleteZipAfterImport}`);
