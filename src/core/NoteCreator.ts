@@ -14,15 +14,14 @@ export class NoteCreator {
         this.settings = settings;
     }
 
-    // Форматирование Summary блока для лучшей читаемости
+    // Улучшенное форматирование Summary блока с сохранением структуры
     private formatSummaryForCallout(summaryLines: string[]): string {
         if (!summaryLines || summaryLines.length === 0) {
-            return '*Краткое содержание недоступно*';
+            return '> *Краткое содержание недоступно*';
         }
 
         const outputLines: string[] = [];
         let sectionCounter = 0;
-        let currentSectionHasBullets = false;
 
         for (let i = 0; i < summaryLines.length; i++) {
             const line = summaryLines[i];
@@ -30,7 +29,7 @@ export class NoteCreator {
 
             // Пропустить пустые строки
             if (strippedLine === '') {
-                outputLines.push('');
+                outputLines.push('>');
                 continue;
             }
 
@@ -39,44 +38,28 @@ export class NoteCreator {
                 continue;
             }
 
-            // Проверка на маркер списка (- или * или •)
-            const isListMarker = /^[-*•]\s+/.test(strippedLine);
+            // Проверяем - это заголовок секции или обычный текст
+            const isHeaderLine = this.isLikelyHeader(strippedLine, i, summaryLines);
 
-            if (isListMarker) {
-                // Это элемент списка - преобразуем в буллет
-                const listText = strippedLine.replace(/^[-*•]\s+/, '');
-                outputLines.push(`- ${listText}`);
-                currentSectionHasBullets = true;
-            } else {
-                // Проверяем: это продолжение предыдущего пункта или новая тема?
-                const looksLikeHeader = this.isLikelyHeader(strippedLine, i, summaryLines);
+            if (isHeaderLine) {
+                // Это заголовок новой секции
+                sectionCounter++;
 
-                if (looksLikeHeader) {
-                    // Это новый заголовок секции
-                    sectionCounter++;
-                    currentSectionHasBullets = false;
-
-                    // Добавляем пустую строку перед новым заголовком (если это не первый)
-                    if (sectionCounter > 1) {
-                        outputLines.push('');
-                    }
-
-                    outputLines.push(`## ${sectionCounter}. ${strippedLine}`);
-                } else {
-                    // Это предложение - делаем буллетом
-                    outputLines.push(`- ${strippedLine}`);
-                    currentSectionHasBullets = true;
+                // Добавляем пустую строку перед новым заголовком (если это не первый)
+                if (sectionCounter > 1) {
+                    outputLines.push('>');
                 }
+
+                outputLines.push(`> ## ${sectionCounter}. ${strippedLine}`);
+            } else {
+                // Это обычный текст - форматируем как пункт списка
+                // Убираем возможные маркеры списка в начале
+                let cleanText = strippedLine.replace(/^[-*•]\s*/, '');
+                outputLines.push(`> - ${cleanText}`);
             }
         }
 
-        // Добавляем префикс > ко всем строкам для callout
-        return outputLines.map(line => {
-            if (line === '') {
-                return '>';
-            }
-            return `> ${line}`;
-        }).join('\n');
+        return outputLines.join('\n');
     }
 
     // Помогает определить является ли строка заголовком секции

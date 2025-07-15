@@ -80,6 +80,11 @@ export class NoteParser {
         parsedData.actionItems = this.extractSection(notesContent, "Action Items", true);
         parsedData.keyPoints = this.extractSection(notesContent, "Key Points", true);
 
+        // Улучшенная обработка Action Items с нормализацией дат
+        if (parsedData.actionItems && parsedData.actionItems.length > 0) {
+            parsedData.actionItems = parsedData.actionItems.map(item => this.normalizeActionItemDate(item));
+        }
+
         const transcriptParsed = this.parseTranscript(transcriptContent);
         parsedData.participants = transcriptParsed.participants;
         parsedData.rawTranscript = transcriptContent;
@@ -463,63 +468,80 @@ export class NoteParser {
     }
 
     /**
-     * Вспомогательный метод для извлечения текста секции между заголовком и следующим двойным переносом строки
-     * или до конца текста, если это последняя секция.
-     * Улучшенная версия для поиска заголовка и конца секции.
+     * Улучшенный метод для извлечения секций с правильной обработкой структуры
+     * Исправляет проблемы с потерей заголовков и Key Points
      */
     private extractSection(content: string, sectionTitle: string, isList: boolean = false): string[] {
         const lines = content.split('\n');
         const resultLines: string[] = [];
         let inSection = false;
-        const sectionTitleRegex = new RegExp(`^${sectionTitle}\s*$`, 'i');
+
+        // Улучшенный regex для поиска заголовка секции
+        const sectionTitleRegex = new RegExp(`^${sectionTitle}\\s*$`, 'i');
+
+        // Известные заголовки секций для определения окончания текущей секции
         const nextKnownSectionTitles = ["Summary", "Action Items", "Key Points", "Transcript", "Transcription"];
-        const nextSectionRegex = new RegExp(`^(${nextKnownSectionTitles.filter(t => t.toLowerCase() !== sectionTitle.toLowerCase()).join('|')})\s*$`, 'i');
+        const nextSectionRegex = new RegExp(`^(${nextKnownSectionTitles.filter(t => t.toLowerCase() !== sectionTitle.toLowerCase()).join('|')})\\s*$`, 'i');
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (sectionTitleRegex.test(line)) {
+            const trimmedLine = line.trim();
+
+            // Начало нужной секции
+            if (sectionTitleRegex.test(trimmedLine)) {
                 inSection = true;
                 continue;
             }
 
+            // Если мы в нужной секции
             if (inSection) {
-                if (nextSectionRegex.test(line)) {
+                // Конец секции - встретили заголовок следующей секции
+                if (nextSectionRegex.test(trimmedLine)) {
                     break;
                 }
-                const trimmedLine = line.trim();
+
+                // Пустая строка
                 if (trimmedLine === '') {
-                    if (isList) {
+                    // Для Summary сохраняем пустые строки как разделители
+                    if (sectionTitle === "Summary" && resultLines.length > 0) {
+                        resultLines.push('');
+                    }
+                    // Для списков проверяем не конец ли секции
+                    else if (isList) {
                         const nextLine = lines[i+1]?.trim();
-                        if (nextLine && !nextLine.match(/^(\s*[-*]|[0-9]+\.)/) && !nextLine.match(/^\s+/)) {
-                        } else if (!nextLine) {
+                        // Если следующая строка пустая или это новая секция - заканчиваем
+                        if (!nextLine || nextSectionRegex.test(nextLine)) {
                             break;
                         }
-                    } else {
-                        if (lines[i+1]?.trim() === '') break;
                     }
+                    continue;
                 }
 
-                if (trimmedLine !== '' || (isList && resultLines.length > 0) ) {
-                    if (isList) {
-                        let listItem = trimmedLine;
-                        if (listItem.startsWith('- ')) {
-                            listItem = listItem.substring(2).trim();
-                        } else if (listItem.startsWith('* ')) {
-                            listItem = listItem.substring(2).trim();
-                        }
-                        if (sectionTitle === "Action Items" && listItem) {
-                           resultLines.push(listItem);
-                        } else if (listItem) {
-                           resultLines.push(listItem);
-                        }
-
-                    } else {
-                        resultLines.push(trimmedLine);
+                // Обработка содержимого
+                if (sectionTitle === "Summary") {
+                    // Для Summary сохраняем структуру с заголовками
+                    resultLines.push(trimmedLine);
+                } else if (isList) {
+                    // Для списков (Action Items, Key Points) убираем маркеры списка
+                    let listItem = trimmedLine;
+                    if (listItem.startsWith('- ')) {
+                        listItem = listItem.substring(2).trim();
+                    } else if (listItem.startsWith('* ')) {
+                        listItem = listItem.substring(2).trim();
+                    } else if (listItem.match(/^\d+\.\s/)) {
+                        listItem = listItem.replace(/^\d+\.\s/, '').trim();
                     }
-                } else if (resultLines.length > 0 && !isList) {
+
+                    if (listItem) {
+                        resultLines.push(listItem);
+                    }
+                } else {
+                    // Для других секций добавляем как есть
+                    resultLines.push(trimmedLine);
                 }
             }
         }
+
         return resultLines;
     }
 
@@ -796,5 +818,58 @@ export class NoteParser {
         }
 
         return Array.from(tags);
+    }
+
+    /**
+     * Улучшенная обработка Action Items с нормализацией дат
+     */
+    private normalizeActionItemDate(item: string): string {
+        // Ищем различные форматы дат в тексте
+        const patterns = [
+            // Формат "May, 27" или "May 27"
+            /\b([A-Za-z]+),?\s+(\d{1,2})\b/,
+            // Формат "DD.MM.YYYY" или "DD/MM/YYYY"
+            /\b(\d{1,2})[\.\-\/](\d{1,2})[\.\-\/](\d{2,4})\b/,
+            // Формат "YYYY-MM-DD"
+            /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/
+        ];
+
+        for (const pattern of patterns) {
+            const match = item.match(pattern);
+            if (match) {
+                try {
+                    let normalizedDate = '';
+
+                    if (pattern === patterns[0]) {
+                        // Обработка "May, 27" формата
+                        const [, month, day] = match;
+                        const currentYear = new Date().getFullYear();
+                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                          'July', 'August', 'September', 'October', 'November', 'December'];
+                        const monthIndex = monthNames.findIndex(m => m.toLowerCase().startsWith(month.toLowerCase()));
+
+                        if (monthIndex !== -1) {
+                            normalizedDate = `${currentYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            return item.replace(match[0], normalizedDate);
+                        }
+                    } else {
+                        // Для других форматов пытаемся создать Date объект
+                        const date = new Date(match[0]);
+                        if (!isNaN(date.getTime())) {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            normalizedDate = `${year}-${month}-${day}`;
+                            return item.replace(match[0], normalizedDate);
+                        }
+                    }
+                } catch (error) {
+                    // Если не удалось распарсить дату, возвращаем оригинальный элемент
+                    console.warn('[NoteParser] Failed to parse date in action item:', match[0]);
+                }
+            }
+        }
+
+        return item;
     }
 }

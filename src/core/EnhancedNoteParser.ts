@@ -455,37 +455,253 @@ export class EnhancedNoteParser {
 
     // Заглушки для методов, которые нужно будет реализовать
     private extractSection(content: string, section: string, asList?: boolean): string[] {
-        // Реализация извлечения секций из meeting_notes.txt
-        return [];
+        if (!content || typeof content !== 'string') return [];
+
+        const lines = content.split('\n');
+        const sectionStart = new RegExp(`^${section}\\s*$`, 'i');
+        let capturing = false;
+        const result: string[] = [];
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+
+            if (sectionStart.test(trimmedLine)) {
+                capturing = true;
+                continue;
+            }
+
+            // Stop if we hit another section (starts with capital letter and ends with colon or is all caps)
+            if (capturing && (
+                /^[A-Z][A-Za-z\s]+:?\s*$/.test(trimmedLine) ||
+                /^[A-Z\s]+$/.test(trimmedLine)
+            ) && trimmedLine.length > 3) {
+                break;
+            }
+
+            if (capturing && trimmedLine) {
+                if (asList) {
+                    // Clean up list items
+                    const cleanItem = trimmedLine.replace(/^[-•*]\s*/, '').trim();
+                    if (cleanItem) result.push(cleanItem);
+                } else {
+                    result.push(trimmedLine);
+                }
+            }
+        }
+
+        return result;
     }
 
     private normalizeDate(match: RegExpMatchArray): string | null {
-        // Нормализация даты в формат YYYY-MM-DD
+        if (!match) return null;
+
+        // Handle different date formats
+        if (match[0].includes('-') && match[1] && match[2] && match[3]) {
+            // YYYY-MM-DD format
+            const year = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10);
+            const day = parseInt(match[3], 10);
+
+            if (year >= 2000 && year <= 2030 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            }
+        } else if (match[1] && match[2] && match[3]) {
+            // Month DD, YYYY format
+            const monthName = match[1];
+            const day = parseInt(match[2], 10);
+            const year = parseInt(match[3], 10);
+            const month = this.monthNameToNumber(monthName);
+
+            if (month > 0 && day >= 1 && day <= 31 && year >= 2000 && year <= 2030) {
+                return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            }
+        }
+
         return null;
     }
 
     private normalizeTime(match: RegExpMatchArray): string | null {
-        // Нормализация времени в формат HH:MM
+        if (!match) return null;
+
+        let hours = parseInt(match[1], 10);
+        const minutes = parseInt(match[2], 10) || 0;
+        const ampm = match[4]?.toUpperCase();
+
+        // Handle AM/PM
+        if (ampm === 'PM' && hours !== 12) {
+            hours += 12;
+        } else if (ampm === 'AM' && hours === 12) {
+            hours = 0;
+        }
+
+        // Handle HHMM format (like 1105)
+        if (match[0].length === 4 && !match[0].includes(':')) {
+            hours = Math.floor(parseInt(match[0], 10) / 100);
+            const mins = parseInt(match[0], 10) % 100;
+            return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        }
+
+        if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
         return null;
     }
 
+    private monthNameToNumber(monthName: string): number {
+        const months: { [key: string]: number } = {
+            'january': 1, 'jan': 1, 'января': 1, 'янв': 1,
+            'february': 2, 'feb': 2, 'февраля': 2, 'фев': 2,
+            'march': 3, 'mar': 3, 'марта': 3, 'мар': 3,
+            'april': 4, 'apr': 4, 'апреля': 4, 'апр': 4,
+            'may': 5, 'мая': 5, 'май': 5,
+            'june': 6, 'jun': 6, 'июня': 6, 'июн': 6,
+            'july': 7, 'jul': 7, 'июля': 7, 'июл': 7,
+            'august': 8, 'aug': 8, 'августа': 8, 'авг': 8,
+            'september': 9, 'sep': 9, 'сентября': 9, 'сен': 9,
+            'october': 10, 'oct': 10, 'октября': 10, 'окт': 10,
+            'november': 11, 'nov': 11, 'ноября': 11, 'ноя': 11,
+            'december': 12, 'dec': 12, 'декабря': 12, 'дек': 12
+        };
+
+        return months[monthName.toLowerCase()] || 0;
+    }
+
     private formatTranscript(content: string, stats: Map<string, ParticipantStats>): string {
-        // Форматирование транскрипта с учетом статистики
-        return content;
+        const lines = content.split('\n');
+        const formattedLines: string[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const speakerMatch = line.match(EnhancedNoteParser.REGEX_CACHE.speakerTime);
+
+            if (speakerMatch) {
+                const speaker = speakerMatch[1].trim();
+                const timestamp = speakerMatch[2];
+                const linkTimestamp = timestamp.length === 5 ? `${timestamp}:00` : timestamp;
+
+                // Get engagement score for speaker
+                const participantStat = stats.get(speaker);
+                const engagementEmoji = participantStat ? this.getEngagementEmoji(participantStat.engagementScore) : '';
+
+                // Read speaker's text
+                const speakerText: string[] = [];
+                let j = i + 1;
+
+                while (j < lines.length) {
+                    const nextLine = lines[j].trim();
+                    if (!nextLine) {
+                        j++;
+                        continue;
+                    }
+
+                    if (EnhancedNoteParser.REGEX_CACHE.speakerTime.test(nextLine)) {
+                        break;
+                    }
+
+                    if (nextLine.toLowerCase() === 'продолжение следует...') {
+                        speakerText.push(`_${nextLine}_`);
+                    } else {
+                        speakerText.push(nextLine);
+                    }
+                    j++;
+                }
+
+                if (speakerText.length > 0) {
+                    const formattedText = speakerText.join('\n');
+                    formattedLines.push(`[[${linkTimestamp}]] **${speaker}**${engagementEmoji}: ${formattedText}`);
+                }
+
+                i = j - 1;
+            }
+        }
+
+        return formattedLines.join('\n\n');
+    }
+
+    private getEngagementEmoji(score: number): string {
+        if (score >= 80) return ' 🔥';
+        if (score >= 60) return ' ⭐';
+        if (score >= 40) return ' 💬';
+        return '';
     }
 
     private extractEntitiesEnhanced(notesContent: string, transcriptContent: string): string[] {
-        // Улучшенное извлечение сущностей
-        return [];
+        const entities: string[] = [];
+        const fullText = `${notesContent} ${transcriptContent}`.substring(0, PERFORMANCE_LIMITS.ENTITIES_TEXT_LIMIT || 10000);
+
+        // Поиск проектов и продуктов
+        const projectMatches = fullText.match(EnhancedNoteParser.REGEX_CACHE.projects);
+        if (projectMatches && projectMatches.length > 0) {
+            entities.push('### 🚀 Упомянутые проекты', '');
+            const uniqueProjects = [...new Set(projectMatches.slice(0, 5))];
+            uniqueProjects.forEach(project => entities.push(`- ${project.trim()}`));
+            entities.push('');
+        }
+
+        // Поиск компаний
+        const companyPattern = /(?:компания|компании|организация|корпорация)\s+([А-Яа-я\w\s]{3,30})|([А-Яа-я][А-Яа-я\w]*(?:нефть|банк|групп|холдинг|корп))/gi;
+        const companyMatches = fullText.match(companyPattern);
+        if (companyMatches && companyMatches.length > 0) {
+            entities.push('### 🏢 Упомянутые компании', '');
+            const uniqueCompanies = [...new Set(companyMatches.slice(0, 5))];
+            uniqueCompanies.forEach(company => entities.push(`- ${company.trim()}`));
+            entities.push('');
+        }
+
+        return entities;
     }
 
     private generateSmartTagsEnhanced(analytics: MeetingAnalytics, data: any): string[] {
-        // Генерация умных тегов на основе аналитики
-        return ['meeting', 'krisp', analytics.meetingType, analytics.sentiment];
+        const tags = ['meeting', 'krisp'];
+
+        // Добавляем тип встречи
+        tags.push(analytics.meetingType.replace(/\s+/g, '-'));
+
+        // Добавляем тональность
+        tags.push(analytics.sentiment);
+
+        // Добавляем уровень энергии
+        tags.push(`${analytics.energyLevel}-energy`);
+
+        // Добавляем теги по количеству участников
+        if (analytics.participantStats.size <= 2) {
+            tags.push('малая-группа');
+        } else if (analytics.participantStats.size <= 5) {
+            tags.push('средняя-группа');
+        } else {
+            tags.push('большая-группа');
+        }
+
+        // Добавляем теги по активности
+        if (analytics.decisionCount > 5) {
+            tags.push('принятие-решений');
+        }
+        if (analytics.questionCount > 10) {
+            tags.push('много-вопросов');
+        }
+
+        return tags;
     }
 
     private generateRelatedLinksEnhanced(notesContent: string, analytics: MeetingAnalytics): string[] {
-        // Генерация связанных ссылок с учетом аналитики
-        return [];
+        const links: string[] = [];
+
+        // Базовые ссылки
+        links.push('- 📋 **Связанные встречи:** [[Поиск встреч]]');
+        links.push('- 📄 **Документы:** [[Поиск документов]]');
+
+        // Ссылки в зависимости от типа встречи
+        if (analytics.meetingType === 'планерка') {
+            links.push('- 🏃 **Предыдущие планерки:** [[Планерки]]');
+        } else if (analytics.meetingType === 'ретроспектива') {
+            links.push('- 🔄 **Ретроспективы:** [[Ретроспективы]]');
+        } else if (analytics.meetingType === 'принятие решений') {
+            links.push('- ⚖️ **Принятые решения:** [[Решения]]');
+        }
+
+        return links;
     }
 }
