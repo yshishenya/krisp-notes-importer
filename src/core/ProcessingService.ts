@@ -172,45 +172,59 @@ export class ProcessingService {
                 this.loggingService.info('Processing', `Processing meeting ${i + 1}/${meetingFolders.length}: ${meetingFolderName}`);
             }
 
-            // Показываем прогресс для множественных встреч
-            const progressMessage = meetingFolders.length > 1
-                ? `Processing meeting ${i + 1}/${meetingFolders.length}: ${meetingFolderName}...`
-                : `Processing meeting: ${meetingFolderName}...`;
-            new Notice(progressMessage);
-
-            const notesTxtFilename = KRISP_FILE_NAMES.MEETING_NOTES;
-            const transcriptTxtFilename = KRISP_FILE_NAMES.TRANSCRIPT;
-            const recordingOriginalFilename = KRISP_FILE_NAMES.AUDIO_DEFAULT; // Это имя файла по умолчанию из Krisp
-
-            const notesFilePath = normalizePath(path.join(meetingFolderPath, notesTxtFilename));
-            const transcriptFilePath = normalizePath(path.join(meetingFolderPath, transcriptTxtFilename));
-
-            // Ищем аудиофайл более гибко (mp3, m4a и т.д.)
-            const meetingFiles = await fsPromises.readdir(meetingFolderPath);
-            const audioFileDirent = meetingFiles.find(f => KRISP_FILE_NAMES.AUDIO_PATTERN.test(f));
-            const actualRecordingOriginalFilename = audioFileDirent ?? recordingOriginalFilename; // Используем найденное или дефолтное
-            const audioFileOriginalPath = normalizePath(path.join(meetingFolderPath, actualRecordingOriginalFilename));
-
-            let notesContent = '';
-            let transcriptContent = '';
-
             try {
-                const rawNotesContent = await fsPromises.readFile(notesFilePath, 'utf-8');
+                // ERROR BOUNDARY: Обработка каждой встречи с полным логированием
 
-                // TYPE GUARD: Валидация содержимого meeting_notes.txt
-                if (!isValidMeetingNotesContent(rawNotesContent)) {
-                    this.logAndNotifyError(
-                        `Invalid meeting notes format in ${meetingFolderName}`,
-                        `File does not contain expected sections (Summary, Action Items, Key Points)`,
-                        'VALIDATE_NOTES'
-                    );
-                    // Продолжаем с пустым содержимым, но предупреждаем
-                    console.warn(`[ProcessingService] Invalid meeting notes format in ${meetingFolderName}, using empty content`);
-                } else {
-                    notesContent = rawNotesContent;
+                // Показываем прогресс для множественных встреч
+                const progressMessage = meetingFolders.length > 1
+                    ? `Processing meeting ${i + 1}/${meetingFolders.length}: ${meetingFolderName}...`
+                    : `Processing meeting: ${meetingFolderName}...`;
+                new Notice(progressMessage);
+
+                const notesTxtFilename = KRISP_FILE_NAMES.MEETING_NOTES;
+                const transcriptTxtFilename = KRISP_FILE_NAMES.TRANSCRIPT;
+                const recordingOriginalFilename = KRISP_FILE_NAMES.AUDIO_DEFAULT; // Это имя файла по умолчанию из Krisp
+
+                const notesFilePath = normalizePath(path.join(meetingFolderPath, notesTxtFilename));
+                const transcriptFilePath = normalizePath(path.join(meetingFolderPath, transcriptTxtFilename));
+
+                // Ищем аудиофайл более гибко (mp3, m4a и т.д.)
+                const meetingFiles = await fsPromises.readdir(meetingFolderPath);
+                const audioFileDirent = meetingFiles.find(f => KRISP_FILE_NAMES.AUDIO_PATTERN.test(f));
+                const actualRecordingOriginalFilename = audioFileDirent ?? recordingOriginalFilename; // Используем найденное или дефолтное
+                const audioFileOriginalPath = normalizePath(path.join(meetingFolderPath, actualRecordingOriginalFilename));
+
+                let notesContent = '';
+                let transcriptContent = '';
+
+                try {
+                    const rawNotesContent = await fsPromises.readFile(notesFilePath, 'utf-8');
+
+                    // TYPE GUARD: Валидация содержимого meeting_notes.txt
+                    if (!isValidMeetingNotesContent(rawNotesContent)) {
+                        this.logAndNotifyError(
+                            `Invalid meeting notes format in ${meetingFolderName}`,
+                            `File does not contain expected sections (Summary, Action Items, Key Points)`,
+                            'VALIDATE_NOTES'
+                        );
+                        // Продолжаем с пустым содержимым, но предупреждаем
+                        console.warn(`[ProcessingService] Invalid meeting notes format in ${meetingFolderName}, using empty content`);
+                    } else {
+                        notesContent = rawNotesContent;
+                    }
+                } catch (e) {
+                    // LOGGING: Детальная ошибка чтения notes файла
+                    this.logAndNotifyError(`Failed to read ${notesTxtFilename} from ${meetingFolderName} in ${zipFileName}`, e, 'READ_NOTES');
+
+                                if (this.loggingService) {
+                    this.loggingService.error('Processing', `Notes file read failed for ${meetingFolderName}`, {
+                        errorMessage: e instanceof Error ? e.message : String(e),
+                        notesPath: notesFilePath,
+                        meetingFolder: meetingFolderName,
+                        zipFile: zipFileName
+                    });
                 }
-            } catch (e) {
-                this.notificationService.showError(`Failed to read ${notesTxtFilename} from ${meetingFolderName} in ${zipFileName}`);
+
                 const alternativeNotesFile = meetingFiles.find(f => f.toLowerCase().includes('notes') && f.toLowerCase().endsWith('.txt') && f !== notesTxtFilename);
                 if (alternativeNotesFile) {
                     this.notificationService.showInfo(`Attempting to use alternative notes file: ${alternativeNotesFile}`);
@@ -222,11 +236,31 @@ export class ProcessingService {
                             console.warn(`[ProcessingService] Alternative notes file also has invalid format`);
                         }
                     } catch (e2) {
-                        this.notificationService.showError(`Failed to read alternative notes file ${alternativeNotesFile} for ${meetingFolderName}.`);
+                        // LOGGING: Ошибка чтения альтернативного файла
+                        this.logAndNotifyError(`Failed to read alternative notes file ${alternativeNotesFile} for ${meetingFolderName}`, e2, 'READ_ALT_NOTES');
+
+                                                if (this.loggingService) {
+                            this.loggingService.error('Processing', `Alternative notes file failed for ${meetingFolderName}`, {
+                                errorMessage: e2 instanceof Error ? e2.message : String(e2),
+                                altNotesFile: alternativeNotesFile,
+                                meetingFolder: meetingFolderName,
+                                zipFile: zipFileName
+                            });
+                        }
+
                         errorCount++;
                         continue; // Пропускаем эту папку встречи
                     }
                 } else {
+                    // LOGGING: Никаких notes файлов не найдено
+                    if (this.loggingService) {
+                        this.loggingService.error('Processing', `No valid notes files found for ${meetingFolderName}`, {
+                            meetingFolder: meetingFolderName,
+                            zipFile: zipFileName,
+                            availableFiles: meetingFiles
+                        });
+                    }
+
                     errorCount++;
                     continue; // Пропускаем эту папку встречи
                 }
@@ -313,6 +347,26 @@ export class ProcessingService {
 
             this.notificationService.showSuccess(`Successfully imported meeting ${meetingFolderName} to ${creationResult.notePath}`);
             importedCount++;
+
+            } catch (unexpectedError) {
+                // LOGGING: Неожиданная ошибка в обработке встречи
+                const errorMsg = `Unexpected error processing meeting ${meetingFolderName}`;
+                this.logAndNotifyError(errorMsg, unexpectedError, 'UNEXPECTED_MEETING_ERROR');
+
+                if (this.loggingService) {
+                    this.loggingService.error('Processing', errorMsg, {
+                        errorMessage: unexpectedError instanceof Error ? unexpectedError.message : String(unexpectedError),
+                        meetingFolder: meetingFolderName,
+                        meetingIndex: i + 1,
+                        totalMeetings: meetingFolders.length,
+                        zipFile: zipFileName,
+                        stack: unexpectedError instanceof Error ? unexpectedError.stack : undefined
+                    });
+                }
+
+                errorCount++;
+                continue; // Продолжаем обработку других встреч
+            }
         } // Конец цикла по папкам встреч
 
         return { importedCount, errorCount, lastCreatedNote };
