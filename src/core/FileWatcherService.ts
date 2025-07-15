@@ -36,7 +36,14 @@ export class FileWatcherService {
     }
 
     /**
-     * Начать отслеживание указанной папки
+     * Start watching the specified folder for changes.
+     *
+     * This function first checks if another folder is currently being watched and stops it if necessary.
+     * It validates that the provided folder path is not empty, exists, and is indeed a directory.
+     * If all checks pass, it sets up a watcher to monitor file events in the specified folder.
+     * Errors during the setup or handling of file events are logged and reported through notifications and status updates.
+     *
+     * @param folderPath - The path to the folder that needs to be watched.
      */
     async startWatching(folderPath: string): Promise<void> {
         if (this.isWatching) {
@@ -148,7 +155,14 @@ export class FileWatcherService {
     }
 
     /**
-     * Обработать событие файловой системы с защитой от race conditions
+     * Process a file event with protection against race conditions.
+     *
+     * This function first checks if the file has a .zip extension and skips processing if it doesn't.
+     * It then verifies that the file exists and is not a directory. If another file is already being processed,
+     * it queues the current file for later handling. Otherwise, it starts processing the file with a mutex
+     * to ensure exclusive access.
+     *
+     * @param filename - The name of the file involved in the event.
      */
     private async handleFileEvent(filename: string): Promise<void> {
         console.log(`[FileWatcher] Processing file event for: ${filename}`);
@@ -184,7 +198,11 @@ export class FileWatcherService {
     }
 
     /**
-     * Обрабатывает файл с мьютексом и очередью
+     * Обрабатывает файл с мьютексом и очередью.
+     *
+     * Функция устанавливает флаг `isProcessingFile` в `true`, обрабатывает файл с помощью внутренней функции,
+     * ловит ошибки, выводит сообщения об ошибках и обновляет статусбар. В конце сбрасывает флаг
+     * и обрабатывает следующий файл из очереди.
      */
     private async processFileWithMutex(fullPath: string): Promise<void> {
         this.isProcessingFile = true;
@@ -206,7 +224,7 @@ export class FileWatcherService {
     }
 
     /**
-     * Обрабатывает следующий файл из очереди
+     * Processes the next file from the queue if available and not already processing a file.
      */
     private async processNextInQueue(): Promise<void> {
         if (this.pendingFiles.size > 0 && !this.isProcessingFile) {
@@ -219,7 +237,15 @@ export class FileWatcherService {
     }
 
     /**
-     * Внутренняя логика обработки файла
+     * Обрабатывает внутреннюю логику обработки ZIP-файла.
+     *
+     * Функция выполняет следующие шаги:
+     * 1. Определяет имя файла из полного пути.
+     * 2. Добавляет задержку для убедитесь в полной загрузке файла.
+     * 3. Получает текущие настройки плагина.
+     * 4. Устанавливает статус обработки в интерфейсе пользователя.
+     * 5. Обрабатывает ZIP-файл с использованием полученных настроек.
+     * 6. Восстанавливает состояние интерфейса после завершения обработки.
      */
     private async processFileInternal(fullPath: string): Promise<void> {
         const filename = path.basename(fullPath);
@@ -255,7 +281,14 @@ export class FileWatcherService {
     }
 
     /**
-     * Ждем пока файл стабилизируется (полностью скопируется)
+     * Waits until a file has stabilized (finished copying).
+     *
+     * This function repeatedly checks the size of the file at regular intervals to determine if it has stopped growing.
+     * If the file size remains constant for a specified number of consecutive checks within a maximum wait time, the function resolves.
+     * It also handles cases where the file does not exist initially by resolving immediately.
+     *
+     * @param filePath - The path to the file to be checked for stability.
+     * @param maxWaitTime - The maximum time (in milliseconds) to wait for the file to stabilize. Defaults to PERFORMANCE_LIMITS.FILE_STABILITY_MAX_WAIT.
      */
     private async waitForFileStability(filePath: string, maxWaitTime: number = PERFORMANCE_LIMITS.FILE_STABILITY_MAX_WAIT): Promise<void> {
         const checkInterval = PERFORMANCE_LIMITS.FILE_STABILITY_CHECK_INTERVAL; // Проверяем каждые 500мс
@@ -265,6 +298,13 @@ export class FileWatcherService {
 
         return new Promise((resolve) => {
             const startTime = Date.now();
+            /**
+             * Checks the stability of a file by comparing its size over time.
+             *
+             * It periodically checks if the file size remains constant for a specified number of checks within a given time frame.
+             * If the file size does not change and exceeds the required stable checks, it resolves the promise.
+             * If the maximum wait time is exceeded or an error occurs, it also resolves the promise.
+             */
             const checkStability = () => {
                 try {
                     if (!fs.existsSync(filePath)) {

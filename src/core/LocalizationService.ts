@@ -594,8 +594,8 @@ export class LocalizationService {
     }
 
     /**
-     * Получает локализованную строку по ключу с переменными
-     * Оптимизированная версия с одним проходом по ключам
+     * Retrieves a localized string by key with optional variables.
+     * Optimized to perform a single pass through the keys.
      */
     t(key: string, variables?: Record<string, string>): string {
         const keys = key.split('.');
@@ -618,7 +618,10 @@ export class LocalizationService {
     }
 
     /**
-     * Получает значение по массиву ключей за один проход
+     * Retrieves a value from an object using an array of keys in a single pass.
+     *
+     * This function traverses the object hierarchy based on the provided keys. If any key is not found,
+     * it returns null. Otherwise, it returns the value associated with the last key.
      */
     private getValueByKeys(obj: any, keys: string[]): any {
         let current = obj;
@@ -635,7 +638,7 @@ export class LocalizationService {
     }
 
     /**
-     * Заменяет переменные в строке
+     * Replaces variables in a string with provided values.
      */
     private replaceVariables(text: string, variables?: Record<string, string>): string {
         if (!variables) {

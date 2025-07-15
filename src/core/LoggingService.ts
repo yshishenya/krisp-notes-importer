@@ -32,7 +32,7 @@ export class LoggingService {
     }
 
     /**
-     * Запускает периодическую очистку устаревших логов
+     * Starts a periodic cleanup of expired logs every 30 minutes.
      */
     private startPeriodicCleanup(): void {
         // Очищаем старые логи каждые 30 минут
@@ -42,7 +42,7 @@ export class LoggingService {
     }
 
     /**
-     * Очистка устаревших логов
+     * Removes expired logs from the log collection based on their TTL.
      */
     private cleanupExpiredLogs(): void {
         const now = Date.now();
@@ -59,7 +59,7 @@ export class LoggingService {
     }
 
     /**
-     * Остановка таймера очистки (для корректного завершения работы)
+     * Stops and clears the cleanup timer to properly terminate the logging service.
      */
     destroy(): void {
         if (this.cleanupTimer) {
@@ -285,7 +285,7 @@ export class LoggingService {
     }
 
     /**
-     * Универсальная обработка ошибок с логированием и уведомлением
+     * Handles errors by logging them and optionally showing a notice.
      */
     handleError(category: string, message: string, error: Error | string, showNotice: boolean = true): void {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -297,7 +297,7 @@ export class LoggingService {
     }
 
     /**
-     * Копировать логи в буфер обмена (для UI)
+     * Copies logs to clipboard and shows a notification.
      */
     async copyLogsToClipboard(): Promise<void> {
         try {
