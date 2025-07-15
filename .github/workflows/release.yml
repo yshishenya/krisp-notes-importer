@@ -37,16 +37,58 @@ jobs:
       - name: Create release archive
         run: |
           cd dist
-          zip -r krisp-notes-importer-${{ github.ref_name }}.zip main.js manifest.json styles.css
+                    zip -r krisp-notes-importer-${{ github.ref_name }}.zip main.js manifest.json styles.css
           echo "Archive created: krisp-notes-importer-${{ github.ref_name }}.zip"
           ls -la krisp-notes-importer-${{ github.ref_name }}.zip
+
+      - name: Extract release notes from CHANGELOG
+        id: extract_notes
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION_CLEAN=${VERSION#v}
+
+          echo "Extracting release notes for version: $VERSION_CLEAN"
+
+          # Find the section for this version in CHANGELOG.md
+          RELEASE_NOTES=$(sed -n "/## \[$VERSION_CLEAN\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+
+          # If no specific version found, try to get the [Unreleased] section
+          if [ -z "$RELEASE_NOTES" ]; then
+            echo "No section found for [$VERSION_CLEAN], trying [Unreleased]..."
+            RELEASE_NOTES=$(sed -n "/## \[Unreleased\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+          fi
+
+          # If still no notes found, create basic notes
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="## Релиз $VERSION
+
+          Подробности изменений см. в [CHANGELOG.md](./CHANGELOG.md)
+
+          ## 📦 Установка
+          1. Скачайте \`krisp-notes-importer-$VERSION.zip\`
+          2. Распакуйте в \`.obsidian/plugins/krisp-notes-importer/\`
+          3. Перезапустите Obsidian и активируйте плагин
+
+          ## 🆘 Поддержка
+          При возникновении проблем создайте issue в репозитории."
+          fi
+
+          echo "Release notes extracted:"
+          echo "$RELEASE_NOTES"
+
+          # Save to output using proper multiline format
+          {
+            echo 'RELEASE_NOTES<<EOF'
+            echo "$RELEASE_NOTES"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             dist/krisp-notes-importer-${{ github.ref_name }}.zip
-          generate_release_notes: true
+          body: ${{ steps.extract_notes.outputs.RELEASE_NOTES }}
           draft: false
           prerelease: false
         env:
