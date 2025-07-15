@@ -308,44 +308,9 @@ export class ProcessingService {
 
             console.log(`[DEBUG] Note created at: ${creationResult.notePath}, audio dest: ${creationResult.audioDestPath}`);
 
-            try {
-                await fsPromises.access(audioFileOriginalPath); // Проверяем существование файла
-                console.log(`[DEBUG] Audio file found: ${audioFileOriginalPath}`);
-                const audioData = await fsPromises.readFile(audioFileOriginalPath);
-                console.log(`[DEBUG] Audio file read, size: ${audioData.length} bytes`);
+            // Аудиофайл теперь создается в NoteCreator.createNote()
+            // Удалена дублированная логика обработки аудио
 
-                if (creationResult.audioDestPath) {
-                    const existingAudioFile = this.app.vault.getAbstractFileByPath(creationResult.audioDestPath);
-
-                    // Обработка согласно стратегии дубликатов (уже обработано в NoteCreator)
-                    if (existingAudioFile && existingAudioFile instanceof TFile) {
-                        // Если файл существует, стратегия уже определена в NoteCreator:
-                        // - 'skip': путь указывает на существующий файл, не перезаписываем
-                        // - 'overwrite': путь указывает на существующий файл, перезаписываем
-                        // - 'rename': путь указывает на новый уникальный файл
-
-                        if (settings.duplicateStrategy === 'skip') {
-                            // Не перезаписываем, используем существующий
-                            console.log(`[DEBUG] Audio file skipped (strategy: skip): ${creationResult.audioDestPath}`);
-                            this.notificationService.showInfo(`Audio file already exists, skipped: ${path.basename(creationResult.audioDestPath)}`);
-                        } else {
-                            // Перезаписываем (strategy: 'overwrite') или создаем с новым именем (strategy: 'rename')
-                            await this.app.vault.modifyBinary(existingAudioFile, audioData);
-                            console.log(`[DEBUG] Audio file updated: ${creationResult.audioDestPath}`);
-                            this.notificationService.showInfo(`Audio file updated: ${path.basename(creationResult.audioDestPath)}`);
-                        }
-                    } else {
-                        // Файл не существует, создаем новый
-                        await this.app.vault.createBinary(creationResult.audioDestPath, audioData);
-                        console.log(`[DEBUG] Audio file created: ${creationResult.audioDestPath}`);
-                        this.notificationService.showInfo(`Audio file created: ${path.basename(creationResult.audioDestPath)}`);
-                    }
-                }
-            } catch (audioError) {
-                // Файл не найден или ошибка чтения
-                console.log(`[DEBUG] Audio file error:`, audioError);
-                this.notificationService.showWarning(`Audio file ${actualRecordingOriginalFilename} not found in ${meetingFolderPath}. Skipped audio.`);
-            }
             this.notificationService.showSuccess(`Successfully imported meeting ${meetingFolderName} to ${creationResult.notePath}`);
             importedCount++;
         } // Конец цикла по папкам встреч

@@ -252,7 +252,12 @@ export class NoteCreator {
         return `${cleanFileName}.${extension}`;
     }
 
-    // Создает заметку и возвращает путь к ней и путь для аудио
+    /**
+     * Создает заметку на основе парсенных данных и, опционально, копирует аудиофайл.
+     * @param parsedData Парсенные данные о встрече.
+     * @param originalAudioPath Полный путь к оригинальному аудиофайлу (если есть).
+     * @returns Объект с путем к созданной заметке, путем к аудиофайлу и объектом файла.
+     */
     public async createNote(parsedData: ParsedKrispData, originalAudioPath?: string): Promise<{ notePath?: string, audioDestPath?: string, noteFile?: TFile }> {
         // 1. Сгенерировать имя файла для заметки
         const noteFileName = this.generateFileName(this.settings.noteNameTemplate, parsedData, 'md');
@@ -290,7 +295,7 @@ export class NoteCreator {
             }
         }
 
-        // 4. Определить путь и имя для аудиофайла (если есть)
+        // 4. Определить путь и имя для аудиофайла (если есть) + создать физический файл
         let audioDestPath: string | undefined = undefined;
         if (originalAudioPath && parsedData.meetingTitle) {
             const audioExtension = path.extname(originalAudioPath) || '.mp3'; // Берем расширение из оригинала
@@ -310,11 +315,8 @@ export class NoteCreator {
             await this.ensureFolderExists(normalizePath(attachmentsFinalPath));
             audioDestPath = normalizePath(path.join(attachmentsFinalPath, audioFileName));
 
-            // Проверка на дубликат аудио с применением стратегии из настроек
-            let existingAudio = this.vault.getAbstractFileByPath(audioDestPath);
-            if (existingAudio) {
-                audioDestPath = await this.handleAudioDuplicate(audioDestPath, attachmentsFinalPath, audioFileName);
-            }
+            // Создаем физический аудиофайл с обработкой дубликатов
+            audioDestPath = await this.createAudioFile(originalAudioPath, audioDestPath, attachmentsFinalPath, audioFileName);
         }
 
         // 5. Заполнить шаблон заметки
@@ -357,6 +359,61 @@ export class NoteCreator {
                 // Fallback на rename для безопасности
                 console.warn(`[NoteCreator] Unknown duplicate strategy: ${strategy}, falling back to rename`);
                 return this.generateUniqueAudioPath(folderPath, fileName);
+        }
+    }
+
+    /**
+     * Создает физический аудиофайл с обработкой дубликатов
+     * @param originalAudioPath Путь к оригинальному аудиофайлу из ZIP
+     * @param destPath Желаемый путь для сохранения аудиофайла
+     * @param folderPath Путь к папке для аудиофайлов
+     * @param fileName Имя аудиофайла
+     * @returns Финальный путь к созданному аудиофайлу
+     */
+    private async createAudioFile(originalAudioPath: string, destPath: string, folderPath: string, fileName: string): Promise<string> {
+        try {
+            // Проверяем существование оригинального файла
+            const fs = require('fs').promises;
+            await fs.access(originalAudioPath);
+
+            // Читаем аудиоданные
+            const audioData = await fs.readFile(originalAudioPath);
+            console.log(`[NoteCreator] Audio file read, size: ${audioData.length} bytes`);
+
+            // Проверяем существование целевого файла
+            const existingAudio = this.vault.getAbstractFileByPath(destPath);
+            let finalDestPath = destPath;
+
+            if (existingAudio) {
+                // Обрабатываем дубликат согласно стратегии
+                finalDestPath = await this.handleAudioDuplicate(destPath, folderPath, fileName);
+
+                // Проверяем стратегию для принятия решения о создании
+                if (this.settings.duplicateStrategy === 'skip') {
+                    console.log(`[NoteCreator] Audio file skipped (strategy: skip): ${fileName}`);
+                    return finalDestPath; // Возвращаем путь к существующему файлу
+                }
+
+                if (this.settings.duplicateStrategy === 'overwrite') {
+                    // Перезаписываем существующий файл
+                    const existingFile = this.vault.getAbstractFileByPath(finalDestPath);
+                    if (existingFile instanceof TFile) {
+                        await this.vault.modifyBinary(existingFile, audioData);
+                        console.log(`[NoteCreator] Audio file updated: ${finalDestPath}`);
+                        return finalDestPath;
+                    }
+                }
+            }
+
+            // Создаем новый файл (для 'rename' или если файл не существует)
+            await this.vault.createBinary(finalDestPath, audioData);
+            console.log(`[NoteCreator] Audio file created: ${finalDestPath}`);
+            return finalDestPath;
+
+        } catch (error) {
+            console.warn(`[NoteCreator] Error creating audio file ${fileName}:`, error);
+            // Возвращаем первоначальный путь для заметки, даже если аудио не создался
+            return destPath;
         }
     }
 
