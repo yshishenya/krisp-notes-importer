@@ -144,7 +144,17 @@ export class ProcessingService {
     }
 
     /**
-     * ERROR BOUNDARY: Safe processing of individual meetings
+     * Process multiple meeting folders with error handling and logging.
+     *
+     * This function iterates over an array of meeting folder entries, processes each one to extract notes and transcripts,
+     * validates the content, parses it using a note parser, and creates corresponding notes. It handles errors gracefully by
+     * logging them and continuing processing. The function returns a summary of imported meetings and any errors encountered.
+     *
+     * @param meetingFolders - An array of directory entries representing meeting folders.
+     * @param tempDirPath - The path to the temporary directory where meeting folders are stored.
+     * @param zipFileName - The name of the ZIP file from which the meeting folders were extracted.
+     * @param settings - Settings for the KrispImporter.
+     * @returns An object containing the count of imported meetings, the count of errors, and information about the last created note.
      */
     private async processMeetingsWithErrorHandling(
         meetingFolders: Dirent[],
