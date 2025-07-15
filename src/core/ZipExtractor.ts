@@ -17,6 +17,29 @@ export class ZipExtractor {
      * @returns Путь к созданной временной директории с распакованным содержимым или null в случае ошибки.
      */
     async extract(zipFilePath: string, tempDirName: string): Promise<string | null> {
+        // Валидация входных данных
+        if (!zipFilePath || typeof zipFilePath !== 'string' || zipFilePath.trim() === '') {
+            new Notice('Неверный путь к ZIP-файлу');
+            return null;
+        }
+
+        if (!tempDirName || typeof tempDirName !== 'string' || tempDirName.trim() === '') {
+            new Notice('Неверное имя временной папки');
+            return null;
+        }
+
+        // Проверяем существование файла
+        if (!existsSync(zipFilePath)) {
+            new Notice(`ZIP-файл не найден: ${zipFilePath}`);
+            return null;
+        }
+
+        // Проверяем расширение файла
+        if (!zipFilePath.toLowerCase().endsWith('.zip')) {
+            new Notice(`Файл не является ZIP-архивом: ${zipFilePath}`);
+            return null;
+        }
+
         try {
             // Создаем уникальную временную директорию
             const os = require('os');

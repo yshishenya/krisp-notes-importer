@@ -1,5 +1,6 @@
 import { App, TFile, Vault, normalizePath } from 'obsidian';
 import { KrispImporterSettings, ParsedKrispData } from '../interfaces';
+import { FILE_UTILS, VALIDATION } from './constants';
 import * as path from 'path'; // Для работы с путями
 
 export class NoteCreator {
@@ -195,13 +196,25 @@ export class NoteCreator {
         }
 
         // Оставшиеся плейсхолдеры из настроек (пользовательские шаблоны имен)
-        content = content.replace(/{{YYYY}}/g, data.date ? data.date.substring(0, 4) : 'YYYY');
-        content = content.replace(/{{MM}}/g, data.date ? data.date.substring(5, 7) : 'MM');
-        content = content.replace(/{{DD}}/g, data.date ? data.date.substring(8, 10) : 'DD');
-        content = content.replace(/{{HH}}/g, data.time ? data.time.substring(0, 2) : 'HH');
-        content = content.replace(/{{mm}}/g, data.time ? data.time.substring(3, 5) : 'mm');
-        // Для {{HHMM}} и других составных, если они есть в шаблоне имени, но не в данных ParsedKrispData
-        content = content.replace(/{{HHMM}}/g, data.time ? data.time.replace(':','') : 'HHMM');
+        // Безопасное извлечение компонентов даты для шаблонов
+        if (data.date && data.date.length >= VALIDATION.MIN_DATE_LENGTH) {
+            content = content.replace(/{{YYYY}}/g, FILE_UTILS.safeSubstring(data.date, 0, 4, 'YYYY'));
+            content = content.replace(/{{MM}}/g, FILE_UTILS.safeSubstring(data.date, 5, 7, 'MM'));
+            content = content.replace(/{{DD}}/g, FILE_UTILS.safeSubstring(data.date, 8, 10, 'DD'));
+        } else {
+            content = content.replace(/{{YYYY}}/g, 'YYYY');
+            content = content.replace(/{{MM}}/g, 'MM');
+            content = content.replace(/{{DD}}/g, 'DD');
+        }
+
+        // Безопасное извлечение компонентов времени для шаблонов
+        if (data.time && data.time.length >= VALIDATION.MIN_TIME_LENGTH) {
+            content = content.replace(/{{HH}}/g, FILE_UTILS.safeSubstring(data.time, 0, 2, 'HH'));
+            content = content.replace(/{{mm}}/g, FILE_UTILS.safeSubstring(data.time, 3, 5, 'MM'));
+        } else {
+            content = content.replace(/{{HH}}/g, 'HH');
+            content = content.replace(/{{mm}}/g, 'MM');
+        }
 
         return content;
     }
@@ -209,18 +222,34 @@ export class NoteCreator {
     // Генерирует имя файла на основе шаблона и данных
     private generateFileName(template: string, parsedData: ParsedKrispData, extension: string): string {
         let fileName = template;
-        fileName = fileName.replace(/{{YYYY}}/g, parsedData.date?.substring(0, 4) || 'YYYY');
-        fileName = fileName.replace(/{{MM}}/g, parsedData.date?.substring(5, 7) || 'MM');
-        fileName = fileName.replace(/{{DD}}/g, parsedData.date?.substring(8, 10) || 'DD');
-        fileName = fileName.replace(/{{HHMM}}/g, parsedData.time?.replace(':', '') || 'HHMM');
-        fileName = fileName.replace(/{{HH}}/g, parsedData.time?.substring(0,2) || 'HH');
-        fileName = fileName.replace(/{{mm}}/g, parsedData.time?.substring(3,5) || 'mm');
+
+        // Безопасное извлечение компонентов даты
+        if (parsedData.date && parsedData.date.length >= VALIDATION.MIN_DATE_LENGTH) {
+            fileName = fileName.replace(/{{YYYY}}/g, FILE_UTILS.safeSubstring(parsedData.date, 0, 4, 'YYYY'));
+            fileName = fileName.replace(/{{MM}}/g, FILE_UTILS.safeSubstring(parsedData.date, 5, 7, 'MM'));
+            fileName = fileName.replace(/{{DD}}/g, FILE_UTILS.safeSubstring(parsedData.date, 8, 10, 'DD'));
+        } else {
+            fileName = fileName.replace(/{{YYYY}}/g, 'YYYY');
+            fileName = fileName.replace(/{{MM}}/g, 'MM');
+            fileName = fileName.replace(/{{DD}}/g, 'DD');
+        }
+
+        // Безопасное извлечение компонентов времени
+        if (parsedData.time && parsedData.time.length >= VALIDATION.MIN_TIME_LENGTH) {
+            fileName = fileName.replace(/{{HHMM}}/g, FILE_UTILS.safeSubstring(parsedData.time, 0, 2, 'HH') + FILE_UTILS.safeSubstring(parsedData.time, 3, 5, 'MM'));
+            fileName = fileName.replace(/{{HH}}/g, FILE_UTILS.safeSubstring(parsedData.time, 0, 2, 'HH'));
+            fileName = fileName.replace(/{{mm}}/g, FILE_UTILS.safeSubstring(parsedData.time, 3, 5, 'MM'));
+        } else {
+            fileName = fileName.replace(/{{HHMM}}/g, 'HHMM');
+            fileName = fileName.replace(/{{HH}}/g, 'HH');
+            fileName = fileName.replace(/{{mm}}/g, 'MM');
+        }
+
         fileName = fileName.replace(/{{meetingTitle}}/g, parsedData.meetingTitle || 'Untitled Meeting');
 
-        // Очистка имени файла от недопустимых символов
-        // eslint-disable-next-line no-useless-escape
-        fileName = fileName.replace(/[\/:\[\]\*\?"<>\|#^]/g, '_').replace(/\s+/g, '_');
-        return `${fileName}.${extension}`;
+        // Очистка имени файла от недопустимых символов - используем централизованную функцию
+        const cleanFileName = FILE_UTILS.sanitizeFileName(fileName);
+        return `${cleanFileName}.${extension}`;
     }
 
     // Создает заметку и возвращает путь к ней и путь для аудио
@@ -281,18 +310,10 @@ export class NoteCreator {
             await this.ensureFolderExists(normalizePath(attachmentsFinalPath));
             audioDestPath = normalizePath(path.join(attachmentsFinalPath, audioFileName));
 
-            // Проверка на дубликат аудио (можно добавить стратегию, пока просто перезапись или уникальное имя)
+            // Проверка на дубликат аудио с применением стратегии из настроек
             let existingAudio = this.vault.getAbstractFileByPath(audioDestPath);
             if (existingAudio) {
-                // TODO: Добавить стратегию для аудио дубликатов, пока просто добавляем суффикс
-                let audioCounter = 1;
-                const audioNameWithoutExt = audioFileName.substring(0, audioFileName.lastIndexOf('.'));
-                const audioExt = audioFileName.substring(audioFileName.lastIndexOf('.') + 1);
-                while(existingAudio) {
-                    audioDestPath = normalizePath(path.join(attachmentsFinalPath, `${audioNameWithoutExt}_${audioCounter}.${audioExt}`));
-                    existingAudio = this.vault.getAbstractFileByPath(audioDestPath);
-                    audioCounter++;
-                }
+                audioDestPath = await this.handleAudioDuplicate(audioDestPath, attachmentsFinalPath, audioFileName);
             }
         }
 
@@ -304,6 +325,63 @@ export class NoteCreator {
         console.log(`Note created: ${noteFilePath}`);
 
         return { notePath: noteFilePath, audioDestPath, noteFile };
+    }
+
+    /**
+     * Обрабатывает дубликаты аудиофайлов согласно настройкам duplicateStrategy
+     * @param originalPath Оригинальный путь к аудиофайлу
+     * @param folderPath Путь к папке для аудиофайлов
+     * @param fileName Имя аудиофайла
+     * @returns Финальный путь для сохранения аудиофайла
+     */
+    private async handleAudioDuplicate(originalPath: string, folderPath: string, fileName: string): Promise<string> {
+        const strategy = this.settings.duplicateStrategy;
+
+        switch (strategy) {
+            case 'skip':
+                // Используем существующий файл
+                console.log(`[NoteCreator] Audio duplicate detected, skipping: ${fileName}`);
+                return originalPath;
+
+            case 'overwrite':
+                // Перезаписываем существующий файл
+                console.log(`[NoteCreator] Audio duplicate detected, will overwrite: ${fileName}`);
+                return originalPath;
+
+            case 'rename':
+                // Создаем уникальное имя
+                console.log(`[NoteCreator] Audio duplicate detected, creating unique name: ${fileName}`);
+                return this.generateUniqueAudioPath(folderPath, fileName);
+
+            default:
+                // Fallback на rename для безопасности
+                console.warn(`[NoteCreator] Unknown duplicate strategy: ${strategy}, falling back to rename`);
+                return this.generateUniqueAudioPath(folderPath, fileName);
+        }
+    }
+
+    /**
+     * Генерирует уникальный путь для аудиофайла при дубликатах
+     * @param folderPath Путь к папке
+     * @param fileName Имя файла
+     * @returns Уникальный путь
+     */
+    private generateUniqueAudioPath(folderPath: string, fileName: string): string {
+        let counter = 1;
+        const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+        const ext = fileName.substring(fileName.lastIndexOf('.') + 1);
+
+        let uniquePath: string;
+        let existingFile: any;
+
+        do {
+            const uniqueFileName = `${nameWithoutExt}_${counter}.${ext}`;
+            uniquePath = normalizePath(path.join(folderPath, uniqueFileName));
+            existingFile = this.vault.getAbstractFileByPath(uniquePath);
+            counter++;
+        } while (existingFile);
+
+        return uniquePath;
     }
 
     // Вспомогательная функция для создания папок, если их нет

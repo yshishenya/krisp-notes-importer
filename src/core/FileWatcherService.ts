@@ -3,6 +3,7 @@ import { ProcessingService } from './ProcessingService';
 import { NotificationService } from './NotificationService';
 import { StatusBarService } from './StatusBarService';
 import { KrispImporterSettings } from '../interfaces';
+import { PERFORMANCE_LIMITS } from './constants';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,6 +16,10 @@ export class FileWatcherService {
     private isWatching: boolean = false;
     private watchedPath: string = '';
     private settingsProvider: () => KrispImporterSettings;
+
+    // Мьютекс для предотвращения race conditions
+    private isProcessingFile: boolean = false;
+    private pendingFiles: Set<string> = new Set();
 
     constructor(
         app: App,
@@ -60,10 +65,19 @@ export class FileWatcherService {
             this.watchedPath = folderPath;
 
             // Создаем watcher для отслеживания изменений в папке
-            this.watcher = fs.watch(folderPath, { persistent: true }, (eventType, filename) => {
+            this.watcher = fs.watch(folderPath, { persistent: true }, async (eventType, filename) => {
                 console.log(`[FileWatcher] Event detected: ${eventType}, filename: ${filename}`);
                 if (eventType === 'rename' && filename) {
-                    this.handleFileEvent(filename);
+                    // Обрабатываем файловое событие асинхронно с правильной обработкой ошибок
+                    try {
+                        await this.handleFileEvent(filename);
+                    } catch (error) {
+                        console.error(`[FileWatcher] Error in file event handler for ${filename}:`, error);
+                        this.notificationService.showError(`Критическая ошибка обработки ${filename}: ${error.message}`);
+                        if (this.statusBarService) {
+                            this.statusBarService.setError(`Критическая ошибка с ${filename}`);
+                        }
+                    }
                 }
             });
 
@@ -79,6 +93,14 @@ export class FileWatcherService {
             console.log(`[Krisp Importer] FileWatcher started for: ${folderPath}`);
 
         } catch (error) {
+            // ИСПРАВЛЕНИЕ: Очищаем watcher при ошибке, чтобы избежать утечки памяти
+            if (this.watcher) {
+                this.watcher.close();
+                this.watcher = null;
+            }
+            this.isWatching = false;
+            this.watchedPath = '';
+
             // Обновляем статус при ошибке
             if (this.statusBarService) {
                 this.statusBarService.setError(`Ошибка отслеживания: ${error.message}`);
@@ -126,30 +148,83 @@ export class FileWatcherService {
     }
 
     /**
-     * Обработать событие файловой системы
+     * Обработать событие файловой системы с защитой от race conditions
      */
     private async handleFileEvent(filename: string): Promise<void> {
         console.log(`[FileWatcher] Processing file event for: ${filename}`);
+
+        // Проверяем что файл имеет расширение .zip
+        if (!filename.toLowerCase().endsWith('.zip')) {
+            console.log(`[FileWatcher] Ignoring non-ZIP file: ${filename}`);
+            return;
+        }
+
+        const fullPath = path.join(this.watchedPath, filename);
+
+        // Проверяем что файл существует (событие rename может быть как создание, так и удаление)
+        if (!fs.existsSync(fullPath)) {
+            return;
+        }
+
+        // Проверяем что это файл, а не папка
+        const stats = fs.statSync(fullPath);
+        if (!stats.isFile()) {
+            return;
+        }
+
+        // Мьютекс: если уже обрабатываем файл, добавляем в очередь
+        if (this.isProcessingFile) {
+            console.log(`[FileWatcher] File processing in progress, queuing: ${filename}`);
+            this.pendingFiles.add(fullPath);
+            return;
+        }
+
+        // Начинаем обработку
+        await this.processFileWithMutex(fullPath);
+    }
+
+    /**
+     * Обрабатывает файл с мьютексом и очередью
+     */
+    private async processFileWithMutex(fullPath: string): Promise<void> {
+        this.isProcessingFile = true;
+
         try {
-            // Проверяем что файл имеет расширение .zip
-            if (!filename.toLowerCase().endsWith('.zip')) {
-                console.log(`[FileWatcher] Ignoring non-ZIP file: ${filename}`);
-                return;
+            await this.processFileInternal(fullPath);
+        } catch (error) {
+            console.error(`[FileWatcher] Critical error processing ${fullPath}:`, error);
+            this.notificationService.showError(`Критическая ошибка обработки ${path.basename(fullPath)}: ${error.message}`);
+            if (this.statusBarService) {
+                this.statusBarService.setError(`Критическая ошибка с ${path.basename(fullPath)}`);
             }
+        } finally {
+            this.isProcessingFile = false;
 
-            const fullPath = path.join(this.watchedPath, filename);
+            // Обрабатываем следующий файл из очереди, если есть
+            await this.processNextInQueue();
+        }
+    }
 
-            // Проверяем что файл существует (событие rename может быть как создание, так и удаление)
-            if (!fs.existsSync(fullPath)) {
-                return;
-            }
+    /**
+     * Обрабатывает следующий файл из очереди
+     */
+    private async processNextInQueue(): Promise<void> {
+        if (this.pendingFiles.size > 0 && !this.isProcessingFile) {
+            const nextFile = this.pendingFiles.values().next().value;
+            this.pendingFiles.delete(nextFile);
 
-            // Проверяем что это файл, а не папка
-            const stats = fs.statSync(fullPath);
-            if (!stats.isFile()) {
-                return;
-            }
+            console.log(`[FileWatcher] Processing queued file: ${path.basename(nextFile)}`);
+            await this.processFileWithMutex(nextFile);
+        }
+    }
 
+    /**
+     * Внутренняя логика обработки файла
+     */
+    private async processFileInternal(fullPath: string): Promise<void> {
+        const filename = path.basename(fullPath);
+
+        try {
             console.log(`[Krisp Importer] New ZIP file detected: ${filename}`);
 
             // Небольшая задержка, чтобы убедиться что файл полностью скопирован
@@ -160,18 +235,12 @@ export class FileWatcherService {
 
             // Устанавливаем статус Processing перед вызовом processNewZipFile
             if (this.statusBarService) {
-                this.statusBarService.setProcessing(path.basename(fullPath));
+                this.statusBarService.setProcessing(filename);
             }
 
             // Обрабатываем файл
             await this.processNewZipFile(fullPath, currentSettings);
 
-        } catch (error) {
-            console.error(`[Krisp Importer] Error handling file event for ${filename}:`, error);
-            this.notificationService.showError(`Ошибка обработки файла ${filename}: ${error.message}`);
-            if (this.statusBarService) {
-                this.statusBarService.setError(`Ошибка с файлом ${filename}`);
-            }
         } finally {
             // Восстанавливаем статус после обработки файла
             if (this.statusBarService) {
@@ -188,13 +257,14 @@ export class FileWatcherService {
     /**
      * Ждем пока файл стабилизируется (полностью скопируется)
      */
-    private async waitForFileStability(filePath: string, maxWaitTime: number = 5000): Promise<void> {
-        const checkInterval = 500; // Проверяем каждые 500мс
+    private async waitForFileStability(filePath: string, maxWaitTime: number = PERFORMANCE_LIMITS.FILE_STABILITY_MAX_WAIT): Promise<void> {
+        const checkInterval = PERFORMANCE_LIMITS.FILE_STABILITY_CHECK_INTERVAL; // Проверяем каждые 500мс
         let lastSize = 0;
         let stableCount = 0;
-        const requiredStableChecks = 3; // Файл должен быть стабильным 3 проверки подряд
+        const requiredStableChecks = PERFORMANCE_LIMITS.FILE_STABILITY_REQUIRED_CHECKS; // Файл должен быть стабильным 3 проверки подряд
 
         return new Promise((resolve) => {
+            const startTime = Date.now();
             const checkStability = () => {
                 try {
                     if (!fs.existsSync(filePath)) {
@@ -225,12 +295,11 @@ export class FileWatcherService {
                         resolve();
                     }
                 } catch (error) {
-                    // Если ошибка доступа к файлу, продолжаем обработку
-                    resolve();
+                    console.error('[FileWatcher] Error checking file stability:', error);
+                    resolve(); // Продолжаем даже при ошибке
                 }
             };
 
-            const startTime = Date.now();
             checkStability();
         });
     }

@@ -1,44 +1,45 @@
 import { Notice } from 'obsidian';
+import { NOTIFICATION_DURATIONS } from './constants';
 
 export class NotificationService {
     constructor() {}
 
     /**
      * Показывает уведомление об успехе
-     * @param message Текст сообщения
-     * @param duration Длительность в миллисекундах (по умолчанию 5000)
+     * @param message Сообщение для отображения
+     * @param duration Длительность в миллисекундах
      */
-    showSuccess(message: string, duration: number = 5000): void {
+    showSuccess(message: string, duration: number = NOTIFICATION_DURATIONS.SUCCESS): void {
         new Notice(message, duration);
         console.log(`[Krisp Importer] SUCCESS: ${message}`);
     }
 
     /**
      * Показывает уведомление об ошибке
-     * @param message Текст сообщения об ошибке
-     * @param duration Длительность в миллисекундах (по умолчанию 8000)
+     * @param message Сообщение для отображения
+     * @param duration Длительность в миллисекундах
      */
-    showError(message: string, duration: number = 8000): void {
+    showError(message: string, duration: number = NOTIFICATION_DURATIONS.ERROR): void {
         new Notice(`ERROR: ${message}`, duration);
         console.error(`[Krisp Importer] ERROR: ${message}`);
     }
 
     /**
      * Показывает предупреждение
-     * @param message Текст предупреждения
-     * @param duration Длительность в миллисекундах (по умолчанию 6000)
+     * @param message Сообщение для отображения
+     * @param duration Длительность в миллисекундах
      */
-    showWarning(message: string, duration: number = 6000): void {
+    showWarning(message: string, duration: number = NOTIFICATION_DURATIONS.WARNING): void {
         new Notice(`WARNING: ${message}`, duration);
         console.warn(`[Krisp Importer] WARNING: ${message}`);
     }
 
     /**
      * Показывает информационное уведомление
-     * @param message Информационное сообщение
-     * @param duration Длительность в миллисекундах (по умолчанию 4000)
+     * @param message Сообщение для отображения
+     * @param duration Длительность в миллисекундах
      */
-    showInfo(message: string, duration: number = 4000): void {
+    showInfo(message: string, duration: number = NOTIFICATION_DURATIONS.INFO): void {
         new Notice(message, duration);
         console.log(`[Krisp Importer] INFO: ${message}`);
     }
@@ -63,17 +64,17 @@ export class NotificationService {
      */
     showBatchImportResult(imported: number, errors: number, skipped: number, zipFileName: string): void {
         if (imported > 0 && errors === 0) {
-            this.showSuccess(`Импорт завершен: ${imported} встреч(и) из "${zipFileName}"`, 8000);
+            this.showSuccess(`Импорт завершен: ${imported} встреч(и) из "${zipFileName}"`, NOTIFICATION_DURATIONS.SUCCESS);
         } else if (imported > 0 && errors > 0) {
-            this.showWarning(`Импорт завершен частично: ${imported} успешно, ${errors} ошибок из "${zipFileName}"`, 10000);
+            this.showWarning(`Импорт завершен частично: ${imported} успешно, ${errors} ошибок из "${zipFileName}"`, NOTIFICATION_DURATIONS.WARNING);
         } else if (errors > 0) {
-            this.showError(`Импорт не удался: ${errors} ошибок в "${zipFileName}"`, 10000);
+            this.showError(`Импорт не удался: ${errors} ошибок в "${zipFileName}"`, NOTIFICATION_DURATIONS.ERROR);
         } else {
-            this.showInfo(`Нет данных для импорта в "${zipFileName}"`, 6000);
+            this.showInfo(`Нет данных для импорта в "${zipFileName}"`, NOTIFICATION_DURATIONS.INFO);
         }
 
         if (skipped > 0) {
-            this.showInfo(`Пропущено дубликатов: ${skipped}`, 4000);
+            this.showInfo(`Пропущено дубликатов: ${skipped}`, NOTIFICATION_DURATIONS.INFO);
         }
     }
 

@@ -1,4 +1,5 @@
 import { Notice } from 'obsidian';
+import { LOGGING, NOTIFICATION_DURATIONS } from './constants';
 
 export enum LogLevel {
     DEBUG = 0,
@@ -17,12 +18,55 @@ export interface LogEntry {
 
 export class LoggingService {
     private logs: LogEntry[] = [];
-    private maxLogEntries: number = 1000;
-    private currentLogLevel: LogLevel = LogLevel.INFO;
+    private maxLogEntries: number = LOGGING.MAX_LOG_ENTRIES;
+    private currentLogLevel: LogLevel;
+    private logTTL: number = LOGGING.LOG_TTL_HOURS * 60 * 60 * 1000; // Конвертируем часы в миллисекунды
+    private cleanupTimer: NodeJS.Timeout | null = null;
 
     constructor(logLevel: LogLevel = LogLevel.INFO) {
         this.currentLogLevel = logLevel;
         this.log(LogLevel.INFO, 'System', 'LoggingService initialized');
+
+        // Запускаем периодическую очистку каждые 30 минут
+        this.startPeriodicCleanup();
+    }
+
+    /**
+     * Запускает периодическую очистку устаревших логов
+     */
+    private startPeriodicCleanup(): void {
+        // Очищаем старые логи каждые 30 минут
+        this.cleanupTimer = setInterval(() => {
+            this.cleanupExpiredLogs();
+        }, LOGGING.CLEANUP_INTERVAL_MINUTES * 60 * 1000); // Конвертируем минуты в миллисекунды
+    }
+
+    /**
+     * Очистка устаревших логов
+     */
+    private cleanupExpiredLogs(): void {
+        const now = Date.now();
+        const initialCount = this.logs.length;
+
+        this.logs = this.logs.filter(log => {
+            return (now - log.timestamp.getTime()) <= this.logTTL;
+        });
+
+        const removedCount = initialCount - this.logs.length;
+        if (removedCount > 0) {
+            this.info('System', `Очищено устаревших логов: ${removedCount}`);
+        }
+    }
+
+    /**
+     * Остановка таймера очистки (для корректного завершения работы)
+     */
+    destroy(): void {
+        if (this.cleanupTimer) {
+            clearInterval(this.cleanupTimer);
+            this.cleanupTimer = null;
+        }
+        this.info('System', 'LoggingService остановлен');
     }
 
     /**
@@ -241,17 +285,28 @@ export class LoggingService {
     }
 
     /**
+     * Универсальная обработка ошибок с логированием и уведомлением
+     */
+    handleError(category: string, message: string, error: Error | string, showNotice: boolean = true): void {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.error(category, message, { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+
+        if (showNotice) {
+            new Notice(`ERROR: ${message}: ${errorMessage}`, NOTIFICATION_DURATIONS.ERROR);
+        }
+    }
+
+    /**
      * Копировать логи в буфер обмена (для UI)
      */
     async copyLogsToClipboard(): Promise<void> {
         try {
             const logsText = this.exportLogsAsText();
             await navigator.clipboard.writeText(logsText);
-            new Notice('📋 Logs copied to clipboard', 3000);
+            new Notice('📋 Logs copied to clipboard', NOTIFICATION_DURATIONS.TEMPORARY_STATUS);
             this.info('System', 'Логи скопированы в буфер обмена');
         } catch (error) {
-            this.error('System', 'Ошибка копирования логов в буфер обмена', error);
-            new Notice('❌ Error copying logs', 5000);
+            this.handleError('System', 'Ошибка копирования логов в буфер обмена', error);
         }
     }
 }

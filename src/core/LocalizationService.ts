@@ -593,39 +593,61 @@ export class LocalizationService {
         return this.currentLanguage;
     }
 
+    /**
+     * Получает локализованную строку по ключу с переменными
+     * Оптимизированная версия с одним проходом по ключам
+     */
     t(key: string, variables?: Record<string, string>): string {
         const keys = key.split('.');
-        let value: any = this.strings[this.currentLanguage];
+
+        // Пытаемся найти значение в текущем языке и английском за один проход
+        const currentLangValue = this.getValueByKeys(this.strings[this.currentLanguage], keys);
+        const englishValue = this.currentLanguage !== 'en'
+            ? this.getValueByKeys(this.strings.en, keys)
+            : null;
+
+        // Выбираем подходящее значение
+        const finalValue = currentLangValue ?? englishValue;
+
+        if (typeof finalValue !== 'string') {
+            return `[Missing: ${key}]`;
+        }
+
+        // Заменяем переменные
+        return this.replaceVariables(finalValue, variables);
+    }
+
+    /**
+     * Получает значение по массиву ключей за один проход
+     */
+    private getValueByKeys(obj: any, keys: string[]): any {
+        let current = obj;
 
         for (const k of keys) {
-            if (value && typeof value === 'object' && k in value) {
-                value = value[k];
+            if (current && typeof current === 'object' && k in current) {
+                current = current[k];
             } else {
-                // Fallback to English if key not found
-                value = this.strings.en;
-                for (const fallbackKey of keys) {
-                    if (value && typeof value === 'object' && fallbackKey in value) {
-                        value = value[fallbackKey];
-                    } else {
-                        return `[Missing: ${key}]`;
-                    }
-                }
-                break;
+                return null; // Ключ не найден
             }
         }
 
-        if (typeof value !== 'string') {
-            return `[Invalid: ${key}]`;
+        return current;
+    }
+
+    /**
+     * Заменяет переменные в строке
+     */
+    private replaceVariables(text: string, variables?: Record<string, string>): string {
+        if (!variables) {
+            return text;
         }
 
-        // Replace variables
-        if (variables) {
-            for (const [varKey, varValue] of Object.entries(variables)) {
-                value = value.replace(new RegExp(`{{${varKey}}}`, 'g'), varValue);
-            }
+        let result = text;
+        for (const [varKey, varValue] of Object.entries(variables)) {
+            result = result.replace(new RegExp(`{{${varKey}}}`, 'g'), varValue);
         }
 
-        return value;
+        return result;
     }
 
     // Convenience methods for common translations
