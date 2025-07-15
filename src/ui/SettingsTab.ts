@@ -257,6 +257,23 @@ export class KrispSettingsTab extends PluginSettingTab {
                     await this.plugin.settingsManager.updateSetting('noteContentTemplate', DEFAULT_SETTINGS.noteContentTemplate);
                     this.display();
                     new Notice(this.localization.t('notifications.success.templateRestored', {fallback: "Default template restored."}));
+                }))
+            .addButton(button => button
+                .setButtonText(this.localization.t('settings.buttons.restoreImprovedTemplate'))
+                .setClass('mod-cta')
+                .onClick(async () => {
+                    const { IMPROVED_NOTE_TEMPLATE } = await import('../interfaces');
+                    await this.plugin.settingsManager.updateSetting('noteContentTemplate', IMPROVED_NOTE_TEMPLATE);
+                    this.display();
+                    new Notice("Установлен улучшенный шаблон с правильной иерархией информации!", 5000);
+                }))
+            .addButton(button => button
+                .setButtonText(this.localization.t('settings.buttons.restoreCompactTemplate'))
+                .onClick(async () => {
+                    const { COMPACT_NOTE_TEMPLATE } = await import('../interfaces');
+                    await this.plugin.settingsManager.updateSetting('noteContentTemplate', COMPACT_NOTE_TEMPLATE);
+                    this.display();
+                    new Notice("Установлен компактный шаблон для минималистов!", 5000);
                 }));
     }
 

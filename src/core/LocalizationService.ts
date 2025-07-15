@@ -74,6 +74,8 @@ export interface LocalizedStrings {
             resetSettings: string;
             showLogs: string;
             restoreTemplate: string;
+            restoreImprovedTemplate: string;
+            restoreCompactTemplate: string;
         };
         info: {
             title: string;
@@ -260,7 +262,9 @@ const EN_STRINGS: LocalizedStrings = {
             massImport: "Import All Files",
             resetSettings: "Reset Settings",
             showLogs: "Show Logs",
-            restoreTemplate: "Restore Default Template"
+            restoreTemplate: "Restore Default Template",
+            restoreImprovedTemplate: "Use Improved Template",
+            restoreCompactTemplate: "Use Compact Template"
         },
         info: {
             title: "Plugin Information",
@@ -452,7 +456,9 @@ const RU_STRINGS: LocalizedStrings = {
             massImport: "Импортировать все файлы",
             resetSettings: "Сбросить настройки",
             showLogs: "Показать логи",
-            restoreTemplate: "Восстановить стандартный шаблон"
+            restoreTemplate: "Восстановить стандартный шаблон",
+            restoreImprovedTemplate: "Использовать улучшенный шаблон",
+            restoreCompactTemplate: "Использовать компактный шаблон"
         },
         info: {
             title: "Информация о плагине",
