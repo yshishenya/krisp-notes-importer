@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import fs from "fs";
 
 const banner =
 `/*
@@ -37,13 +38,28 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: "dist/main.js",
 	minify: prod,
 });
 
+// Копирование дополнительных файлов в dist
+function copyToDist() {
+	if (!fs.existsSync("dist")) {
+		fs.mkdirSync("dist", { recursive: true });
+	}
+
+	// Копируем необходимые файлы
+	fs.copyFileSync("manifest.json", "dist/manifest.json");
+	fs.copyFileSync("styles.css", "dist/styles.css");
+
+	console.log("✅ Файлы скопированы в dist папку");
+}
+
 if (prod) {
 	await context.rebuild();
+	copyToDist();
 	process.exit(0);
 } else {
 	await context.watch();
+	copyToDist();
 }

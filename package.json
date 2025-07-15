@@ -2,7 +2,7 @@
 	"name": "krisp-notes-importer",
 	  "version": "3.5.1",
 	"description": "Плагин Obsidian для автоматического импорта заметок из архивов Krisp",
-	"main": "main.js",
+	"main": "dist/main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
