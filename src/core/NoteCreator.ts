@@ -253,10 +253,16 @@ export class NoteCreator {
     }
 
     /**
-     * Создает заметку на основе парсенных данных и, опционально, копирует аудиофайл.
-     * @param parsedData Парсенные данные о встрече.
-     * @param originalAudioPath Полный путь к оригинальному аудиофайлу (если есть).
-     * @returns Объект с путем к созданной заметке, путем к аудиофайлу и объектом файла.
+     * Creates a note based on parsed data and optionally copies an audio file.
+     *
+     * The function generates a filename for the note, determines the folder path including subdirectories for year/month,
+     * checks for duplicates and handles them according to the duplicate strategy. If an original audio file is provided,
+     * it defines a path for the audio file, creates the necessary directory structure, and copies the audio file with
+     * handling for duplicates. It then fills in a note template with the parsed data and creates the note file.
+     *
+     * @param parsedData - Parsed data about the meeting.
+     * @param originalAudioPath - Full path to the original audio file (if any).
+     * @returns An object containing the path to the created note, the path to the audio file, and the file object.
      */
     public async createNote(parsedData: ParsedKrispData, originalAudioPath?: string): Promise<{ notePath?: string, audioDestPath?: string, noteFile?: TFile }> {
         // 1. Сгенерировать имя файла для заметки
@@ -363,12 +369,17 @@ export class NoteCreator {
     }
 
     /**
-     * Создает физический аудиофайл с обработкой дубликатов
-     * @param originalAudioPath Путь к оригинальному аудиофайлу из ZIP
-     * @param destPath Желаемый путь для сохранения аудиофайла
-     * @param folderPath Путь к папке для аудиофайлов
-     * @param fileName Имя аудиофайла
-     * @returns Финальный путь к созданному аудиофайлу
+     * Creates a physical audio file with duplicate handling.
+     *
+     * This function checks if the original audio file exists, reads its data,
+     * and handles duplicates according to the configured strategy ('skip', 'overwrite', or 'rename').
+     * It logs various steps and returns the final path of the created or existing audio file.
+     *
+     * @param originalAudioPath - Path to the original audio file in ZIP.
+     * @param destPath - Desired path for saving the audio file.
+     * @param folderPath - Path to the folder containing audio files.
+     * @param fileName - Name of the audio file.
+     * @returns The final path to the created or existing audio file.
      */
     private async createAudioFile(originalAudioPath: string, destPath: string, folderPath: string, fileName: string): Promise<string> {
         try {
