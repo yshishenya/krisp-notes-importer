@@ -180,6 +180,10 @@ export class NoteParser {
                     lastTimestamp = linkTimestamp;
                 } else if (currentSpeaker) {
                     // Текст текущего спикера
+                    if (this.isLikelyTranscriptNoise(trimmedLine)) {
+                        return;
+                    }
+
                     if (trimmedLine.toLowerCase() === 'продолжение следует...') {
                         currentSpeakerText.push(`_${trimmedLine}_`);
                     } else {
@@ -187,7 +191,9 @@ export class NoteParser {
                     }
                 } else {
                     // Строка без спикера в начале
-                    formattedLines.push(trimmedLine);
+                    if (!this.isLikelyTranscriptNoise(trimmedLine)) {
+                        formattedLines.push(trimmedLine);
+                    }
                 }
             });
 
@@ -330,6 +336,11 @@ export class NoteParser {
                         break;
                     }
 
+                    if (this.isLikelyTranscriptNoise(nextLine)) {
+                        j++;
+                        continue;
+                    }
+
                     // Если это "продолжение следует...", форматируем как курсив
                     if (nextLine.toLowerCase() === 'продолжение следует...') {
                         speakerText.push(`_${nextLine}_`);
@@ -355,6 +366,10 @@ export class NoteParser {
                 // Отдельная строка "продолжение следует..."
                 formattedLines.push(`_${trimmedLine}_`);
             } else {
+                if (this.isLikelyTranscriptNoise(trimmedLine)) {
+                    continue;
+                }
+
                 // Строка без спикера, возможно это продолжение предыдущего текста
                 if (formattedLines.length > 0) {
                     // Добавляем к последней строке
@@ -547,6 +562,38 @@ export class NoteParser {
 
     private escapeRegExp(string: string): string {
         return string.replace(/[.*+?^${}()|[\\\]]/g, '\\$&');
+    }
+
+    /**
+     * Фильтр мусорных строк в транскрипте (глитчи распознавания речи)
+     */
+    private isLikelyTranscriptNoise(text: string): boolean {
+        if (!text) return true;
+
+        const normalized = text.trim();
+        if (!normalized) return true;
+
+        // Очень длинные повторяющиеся паттерны вида "ду-ду-ду-..."
+        if (/^([\p{L}]{1,4}[-\s]){12,}[\p{L}]{0,4}[.!?…]?$/iu.test(normalized)) {
+            return true;
+        }
+
+        // Явный маркер нераспознанной/поврежденной речи
+        if (/^[.,\-–—_\s]+$/.test(normalized)) {
+            return true;
+        }
+
+        // Слишком много символов не латиницы/кириллицы -> вероятный артефакт ASR
+        const letters = normalized.match(/\p{L}/gu) || [];
+        if (letters.length >= 8) {
+            const allowedLetters = normalized.match(/[\p{Script=Latin}\p{Script=Cyrillic}]/gu) || [];
+            const ratioAllowed = allowedLetters.length / letters.length;
+            if (ratioAllowed < 0.5) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private isLikelyDateOrTime(text: string): boolean {
