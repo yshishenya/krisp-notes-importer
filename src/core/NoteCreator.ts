@@ -313,11 +313,14 @@ export class NoteCreator {
     }
 
     /**
-     * Обрабатывает дубликаты аудиофайлов согласно настройкам duplicateStrategy
-     * @param destPath Желаемый путь к аудиофайлу в хранилище
-     * @param folderPath Путь к папке для аудиофайлов
-     * @param fileName Имя аудиофайла
-     * @returns Финальный путь для сохранения аудиофайла
+     * Handles duplicate audio files according to the specified duplicate strategy.
+     * The function checks the current duplicate strategy and takes appropriate action:
+     * it can skip the duplicate, overwrite the existing file, or create a unique name for the new file.
+     * If an unknown strategy is encountered, it defaults to renaming the file to ensure no data is lost.
+     *
+     * @param destPath - The desired path for the audio file in storage.
+     * @param folderPath - The path to the folder for audio files.
+     * @param fileName - The name of the audio file.
      */
     private async handleAudioDuplicate(destPath: string, folderPath: string, fileName: string): Promise<string> {
         const strategy = this.settings.duplicateStrategy;

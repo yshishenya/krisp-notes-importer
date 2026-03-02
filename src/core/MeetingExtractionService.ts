@@ -135,8 +135,15 @@ export class MeetingExtractionService implements IMeetingExtractionService {
     }
 
     /**
-     * Находит аудиофайлы в папке встречи с расширенным поиском
-     * Поддерживает видеофайлы и различные форматы
+     * Finds audio files in a specified folder with extended search capabilities.
+     *
+     * The function reads the contents of the folder, filters for media files using MEDIA_UTILS,
+     * and categorizes them into audio and video files. It logs the found media files and their types,
+     * returning an array of all media files found. If an error occurs during the reading process,
+     * it logs a warning and returns an empty array.
+     *
+     * @param folderPath - The path to the folder where audio files are to be searched.
+     * @returns A promise that resolves to an array of media file names found in the folder.
      */
     async findAudioFiles(folderPath: string): Promise<string[]> {
         try {
