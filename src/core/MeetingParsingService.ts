@@ -11,7 +11,7 @@ import {
     StreamingOptions
 } from './serviceInterfaces';
 import { ParsedKrispData } from '../interfaces';
-import { KRISP_FILE_NAMES, PERFORMANCE_LIMITS } from './constants';
+import { KRISP_FILE_NAMES, MEDIA_UTILS, PERFORMANCE_LIMITS } from './constants';
 import {
     isValidMeetingNotesContent,
     isValidTranscriptContent
@@ -198,17 +198,19 @@ export class MeetingParsingService implements IMeetingParsingService {
     }
 
     /**
-     * Находит аудиофайл в папке встречи
+     * Находит аудиофайл в папке встречи с расширенным поиском
+     * Поддерживает видеофайлы и различные форматы
      */
     private async findAudioFile(meetingFolderPath: string, files: string[]): Promise<string> {
-        // Ищем аудиофайл по паттерну
-        const audioFile = files.find(file => KRISP_FILE_NAMES.AUDIO_PATTERN.test(file));
+        const audioFile = MEDIA_UTILS.findBestMediaFile(files);
 
         if (audioFile) {
+            console.log(`[MeetingParsingService] Found media file: ${audioFile}`);
             return normalizePath(path.join(meetingFolderPath, audioFile));
         }
 
-        // Если не найден, возвращаем путь к дефолтному файлу
+        // Если ничего не найдено, возвращаем путь к дефолтному файлу
+        console.warn(`[MeetingParsingService] No media files found in ${meetingFolderPath}, using default`);
         return normalizePath(path.join(meetingFolderPath, KRISP_FILE_NAMES.AUDIO_DEFAULT));
     }
 

@@ -314,24 +314,24 @@ export class NoteCreator {
 
     /**
      * Обрабатывает дубликаты аудиофайлов согласно настройкам duplicateStrategy
-     * @param originalPath Оригинальный путь к аудиофайлу
+     * @param destPath Желаемый путь к аудиофайлу в хранилище
      * @param folderPath Путь к папке для аудиофайлов
      * @param fileName Имя аудиофайла
      * @returns Финальный путь для сохранения аудиофайла
      */
-    private async handleAudioDuplicate(originalPath: string, folderPath: string, fileName: string): Promise<string> {
+    private async handleAudioDuplicate(destPath: string, folderPath: string, fileName: string): Promise<string> {
         const strategy = this.settings.duplicateStrategy;
 
         switch (strategy) {
             case 'skip':
                 // Используем существующий файл
                 console.log(`[NoteCreator] Audio duplicate detected, skipping: ${fileName}`);
-                return originalPath;
+                return destPath; // Возвращаем путь к существующему файлу
 
             case 'overwrite':
                 // Перезаписываем существующий файл
                 console.log(`[NoteCreator] Audio duplicate detected, will overwrite: ${fileName}`);
-                return originalPath;
+                return destPath; // Возвращаем тот же путь для перезаписи
 
             case 'rename':
                 // Создаем уникальное имя

@@ -8,7 +8,7 @@ import {
     ExtractionResult,
     MeetingFolder
 } from './serviceInterfaces';
-import { KRISP_FILE_NAMES } from './constants';
+import { KRISP_FILE_NAMES, MEDIA_UTILS } from './constants';
 import { isValidZipFile, isValidFilePath } from './typeGuards';
 
 /**
@@ -135,12 +135,28 @@ export class MeetingExtractionService implements IMeetingExtractionService {
     }
 
     /**
-     * Находит аудиофайлы в папке встречи
+     * Находит аудиофайлы в папке встречи с расширенным поиском
+     * Поддерживает видеофайлы и различные форматы
      */
     async findAudioFiles(folderPath: string): Promise<string[]> {
         try {
             const files = await fsPromises.readdir(folderPath);
-            return files.filter(file => KRISP_FILE_NAMES.AUDIO_PATTERN.test(file));
+
+            // Ищем все медиафайлы используя утилиту
+            const mediaFiles = files.filter(file => MEDIA_UTILS.isMediaFile(file));
+
+            if (mediaFiles.length > 0) {
+                console.log(`[MeetingExtractionService] Found ${mediaFiles.length} media files:`, mediaFiles);
+
+                // Группируем по типам для диагностики
+                const audioFiles = mediaFiles.filter(f => MEDIA_UTILS.getMediaType(f) === 'audio');
+                const videoFiles = mediaFiles.filter(f => MEDIA_UTILS.getMediaType(f) === 'video');
+
+                if (audioFiles.length > 0) console.log(`  📻 Audio: ${audioFiles.join(', ')}`);
+                if (videoFiles.length > 0) console.log(`  🎥 Video: ${videoFiles.join(', ')}`);
+            }
+
+            return mediaFiles;
         } catch (error) {
             console.warn(`[MeetingExtractionService] Error finding audio files in ${folderPath}:`, error);
             return [];

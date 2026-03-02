@@ -34,7 +34,64 @@ export const KRISP_FILE_NAMES = {
     MEETING_NOTES: 'meeting_notes.txt',
     TRANSCRIPT: 'transcript.txt',
     AUDIO_DEFAULT: 'recording.mp3',
-    AUDIO_PATTERN: /^recording\.(mp3|m4a)$/i,
+
+    // Основной паттерн для обратной совместимости (стандартный Krisp)
+    AUDIO_PATTERN: /^recording\.(mp3|m4a|wav|aac|flac|ogg)$/i,
+
+    // Дополнительные паттерны для расширенного поиска медиафайлов
+    RECORDING_PATTERNS: [
+        /^recording\./i,           // Стандартный Krisp: recording.mp3
+        /^audio\./i,               // Альтернативный: audio.mp3
+        /^video\./i,               // Видео: video.mp4
+        /^meeting_recording\./i,   // Полное имя: meeting_recording.mp3
+        /^krisp_.*\.(mp3|m4a|wav|aac|flac|ogg|mp4|mov|avi|webm|mkv)$/i // krisp_timestamp.mp3
+    ]
+} as const;
+
+// Утилитарные функции для работы с медиафайлами
+export const MEDIA_UTILS = {
+    // Общий паттерн медиафайлов (аудио + видео)
+    MEDIA_EXTENSIONS: /\.(mp3|m4a|wav|aac|flac|ogg|mp4|mov|avi|webm|mkv)$/i,
+
+    /**
+     * Проверяет является ли файл медиафайлом (аудио или видео)
+     */
+    isMediaFile(fileName: string): boolean {
+        return MEDIA_UTILS.MEDIA_EXTENSIONS.test(fileName);
+    },
+
+    /**
+     * Определяет тип медиафайла
+     */
+    getMediaType(fileName: string): 'audio' | 'video' | 'unknown' {
+        const audioExtensions = /\.(mp3|m4a|wav|aac|flac|ogg)$/i;
+        const videoExtensions = /\.(mp4|mov|avi|webm|mkv)$/i;
+
+        if (audioExtensions.test(fileName)) return 'audio';
+        if (videoExtensions.test(fileName)) return 'video';
+        return 'unknown';
+    },
+
+    /**
+     * Ищет медиафайлы в списке файлов с приоритетом
+     * @param files Список файлов
+     * @returns Найденный медиафайл или null
+     */
+    findBestMediaFile(files: string[]): string | null {
+        // Приоритет 1: Стандартный Krisp паттерн
+        let found = files.find(f => KRISP_FILE_NAMES.AUDIO_PATTERN.test(f));
+        if (found) return found;
+
+        // Приоритет 2: Расширенные паттерны
+        for (const pattern of KRISP_FILE_NAMES.RECORDING_PATTERNS) {
+            found = files.find(f => pattern.test(f));
+            if (found) return found;
+        }
+
+        // Приоритет 3: Любой медиафайл
+        found = files.find(f => MEDIA_UTILS.isMediaFile(f));
+        return found || null;
+    }
 } as const;
 
 // Логирование

@@ -6,7 +6,7 @@ import { NoteCreator } from './NoteCreator';
 import { NotificationService } from './NotificationService';
 import { StatusBarService } from './StatusBarService';
 import { LoggingService } from './LoggingService';
-import { KRISP_FILE_NAMES } from './constants';
+import { KRISP_FILE_NAMES, MEDIA_UTILS } from './constants';
 import {
     isValidMeetingNotesContent,
     isValidTranscriptContent,
@@ -203,9 +203,10 @@ export class ProcessingService {
                 const notesFilePath = normalizePath(path.join(meetingFolderPath, notesTxtFilename));
                 const transcriptFilePath = normalizePath(path.join(meetingFolderPath, transcriptTxtFilename));
 
-                // Ищем аудиофайл более гибко (mp3, m4a и т.д.)
+                // Улучшенный поиск аудиофайлов (поддержка видео и различных форматов)
                 const meetingFiles = await fsPromises.readdir(meetingFolderPath);
-                const audioFileDirent = meetingFiles.find(f => KRISP_FILE_NAMES.AUDIO_PATTERN.test(f));
+                const audioFileDirent = MEDIA_UTILS.findBestMediaFile(meetingFiles);
+
                 const actualRecordingOriginalFilename = audioFileDirent ?? recordingOriginalFilename; // Используем найденное или дефолтное
                 const audioFileOriginalPath = normalizePath(path.join(meetingFolderPath, actualRecordingOriginalFilename));
 

@@ -104,7 +104,7 @@ dispose(): void
 - Валидация парсенных данных
 
 **Алгоритм оптимизации больших файлов:**
-```typescript
+    ```typescript
 // Для файлов >100MB используется стриминг
 if (fileSize > 100MB) {
     return await this.readLargeTranscriptFile(filePath);
