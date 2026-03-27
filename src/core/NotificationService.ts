@@ -9,7 +9,7 @@ export class NotificationService {
     constructor() {}
 
     /**
-     * Включает batch режим для массовых операций
+     * Enables batch mode for mass operations.
      */
     startBatchOperation(operationId: string): void {
         this.batchMode = true;
@@ -18,7 +18,7 @@ export class NotificationService {
     }
 
     /**
-     * Выключает batch режим
+     * Disables batch mode and resets current operation ID.
      */
     endBatchOperation(): void {
         this.batchMode = false;
@@ -30,7 +30,7 @@ export class NotificationService {
     }
 
     /**
-     * Показывает прогресс для массовых операций
+     * Shows progress for batch operations.
      */
     showBatchProgress(message: string, hideAfter: number = 0): void {
         if (this.batchMode) {
@@ -42,7 +42,7 @@ export class NotificationService {
     }
 
     /**
-     * Скрывает предыдущие уведомления
+     * Hides previous notices by invoking their hide method and setting them to null.
      */
     private hidePreviousNotices(): void {
         if (this.progressNotice) {
@@ -52,7 +52,7 @@ export class NotificationService {
     }
 
     /**
-     * Показывает уведомление об успехе (с учетом batch режима)
+     * Shows a success notification (considering batch mode).
      */
     showSuccess(message: string, duration: number = NOTIFICATION_DURATIONS.SUCCESS): void {
         // В batch режиме не показываем индивидуальные success уведомления
@@ -66,7 +66,7 @@ export class NotificationService {
     }
 
     /**
-     * Показывает уведомление об ошибке
+     * Displays an error notification and logs it to the console.
      */
     showError(message: string, duration: number = NOTIFICATION_DURATIONS.ERROR): void {
         new Notice(`ERROR: ${message}`, duration);
@@ -74,7 +74,7 @@ export class NotificationService {
     }
 
     /**
-     * Показывает предупреждение
+     * Displays a warning message with a specified duration.
      */
     showWarning(message: string, duration: number = NOTIFICATION_DURATIONS.WARNING): void {
         new Notice(`WARNING: ${message}`, duration);
@@ -82,7 +82,7 @@ export class NotificationService {
     }
 
     /**
-     * Показывает информационное уведомление (с учетом batch режима)
+     * Displays an informational notification (considering batch mode).
      */
     showInfo(message: string, duration: number = NOTIFICATION_DURATIONS.INFO): void {
         // В batch режиме не показываем прогресс для отдельных элементов
@@ -96,7 +96,15 @@ export class NotificationService {
     }
 
     /**
-     * Принудительно показывает уведомление (игнорируя batch режим)
+     * Forcefully displays a notification, ignoring the batch mode.
+     *
+     * This function creates a new Notice based on the provided message and type,
+     * with an optional duration. It logs the notification details to the console.
+     *
+     * @param message - The message to be displayed in the notification.
+     * @param type - The type of the notification, which can be 'info', 'success', 'error', or 'warning'.
+     *               Defaults to 'info' if not specified.
+     * @param duration - Optional duration for the notification. If not provided, a default duration based on the type is used.
      */
     forceNotification(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info', duration?: number): void {
         switch (type) {
@@ -116,7 +124,7 @@ export class NotificationService {
     }
 
     /**
-     * Проверяет, является ли сообщение прогрессом для отдельного элемента
+     * Checks if a message indicates progress for an individual element.
      */
     private isIndividualProgressMessage(message: string): boolean {
         return message.includes('Processing meeting') ||
@@ -125,7 +133,7 @@ export class NotificationService {
     }
 
     /**
-     * Проверяет, является ли сообщение успехом для отдельного элемента
+     * Determines if a message indicates successful processing of an individual item.
      */
     private isIndividualItemMessage(message: string): boolean {
         return message.includes('Successfully imported meeting') ||
@@ -134,7 +142,12 @@ export class NotificationService {
     }
 
     /**
-     * Показывает сводное уведомление о результатах массового импорта
+     * Displays a summary notification of batch import results.
+     *
+     * This function determines the appropriate notification type based on the number
+     * of imported items, errors, and skipped duplicates. It constructs a message that
+     * reflects the outcome of the import operation and sets an appropriate duration for
+     * the notification display. The function then forces the notification to be shown.
      */
     showBatchImportResult(imported: number, errors: number, skipped: number, operationName: string): void {
         let message: string;
@@ -172,7 +185,7 @@ export class NotificationService {
     }
 
     /**
-     * Показывает детальный результат импорта (для отладки/логов)
+     * Logs detailed import results for debugging or logging purposes.
      */
     logDetailedResult(imported: number, errors: number, skipped: number, operationName: string): void {
         console.log(`[Krisp Importer] DETAILED RESULT for "${operationName}":`, {
